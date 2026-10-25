@@ -1,4 +1,5 @@
 import { ArrowRight, Skull, Globe, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { useGameStore } from "../store/gameStore";
 
@@ -25,13 +26,20 @@ export default function Home() {
                     The future belongs to those who rebuild.
                 </p>
 
-                <button
-                    className="primary-button"
-                    onClick={startGame}
-                >
-                    ENTER THE WASTELAND
-                    <ArrowRight size={20} />
-                </button>
+                <div className="home-actions">
+                    <button
+                        className="primary-button"
+                        onClick={startGame}
+                    >
+                        ENTER THE WASTELAND
+                        <ArrowRight size={20} />
+                    </button>
+
+                    <Link className="world-button" to="/world">
+                        <Globe size={18} />
+                        ENTER WORLD
+                    </Link>
+                </div>
 
                 <div className="world-stats">
                     <div>

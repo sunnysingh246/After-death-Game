@@ -45,18 +45,36 @@ export default function Survivor({
             previousPhase.current = phase;
 
             let angle;
+            let bodyLean;
             if (phase < 0.34) {
-                angle = THREE.MathUtils.lerp(0, -1.8, phase / 0.34);
+                const windup = THREE.MathUtils.smoothstep(phase / 0.34, 0, 1);
+                angle = THREE.MathUtils.lerp(0, -2, windup);
+                bodyLean = -0.12 * windup;
             } else if (phase < 0.53) {
-                angle = THREE.MathUtils.lerp(-1.8, 1.0, (phase - 0.34) / 0.19);
+                const strike = THREE.MathUtils.smoothstep(
+                    (phase - 0.34) / 0.19,
+                    0,
+                    1
+                );
+                angle = THREE.MathUtils.lerp(-2, 1.1, strike);
+                bodyLean = THREE.MathUtils.lerp(-0.12, 0.18, strike);
             } else {
-                angle = THREE.MathUtils.lerp(1.0, 0, (phase - 0.53) / 0.47);
+                const recovery = THREE.MathUtils.smoothstep(
+                    (phase - 0.53) / 0.47,
+                    0,
+                    1
+                );
+                angle = THREE.MathUtils.lerp(1.1, 0, recovery);
+                bodyLean = THREE.MathUtils.lerp(0.18, 0, recovery);
             }
 
             if (rightArm.current) rightArm.current.rotation.x = angle;
             if (leftArm.current) leftArm.current.rotation.x = -0.35;
-            if (axe.current) axe.current.rotation.x = angle;
-            body.current.rotation.x = phase > 0.34 && phase < 0.53 ? 0.08 : 0;
+            if (axe.current) axe.current.rotation.x = -angle * 0.45;
+            body.current.rotation.x = bodyLean;
+            body.current.position.y = phase < 0.34
+                ? -0.06 * Math.sin((phase / 0.34) * Math.PI)
+                : 0;
             if (leftLeg.current) leftLeg.current.rotation.x = 0;
             if (rightLeg.current) rightLeg.current.rotation.x = 0;
         } else {
@@ -64,21 +82,26 @@ export default function Survivor({
             previousPhase.current = 0;
             if (axe.current) axe.current.rotation.x = 0;
             if (body.current) body.current.rotation.x = 0;
+            if (body.current) body.current.position.y = 0;
 
             if (moving) {
-                const swing = Math.sin(state.clock.elapsedTime * 10) * 0.55;
+                const swing = Math.sin(state.clock.elapsedTime * 9) * 0.55;
                 if (leftArm.current) leftArm.current.rotation.x = swing;
                 if (rightArm.current) rightArm.current.rotation.x = -swing;
                 if (leftLeg.current) leftLeg.current.rotation.x = -swing;
                 if (rightLeg.current) rightLeg.current.rotation.x = swing;
             } else {
-                if (leftArm.current) leftArm.current.rotation.x = 0;
-                if (rightArm.current) rightArm.current.rotation.x = 0;
+                const idleSway = Math.sin(state.clock.elapsedTime * 1.8) * 0.035;
+                if (leftArm.current) leftArm.current.rotation.x = idleSway;
+                if (rightArm.current) rightArm.current.rotation.x = -idleSway;
                 if (leftLeg.current) leftLeg.current.rotation.x = 0;
                 if (rightLeg.current) rightLeg.current.rotation.x = 0;
             }
+
+            body.current.scale.y = 1 + Math.sin(state.clock.elapsedTime * 2.2) * 0.012;
         }
 
+        if (isChopping) body.current.scale.y = 1;
         previousChopping.current = isChopping;
     });
 

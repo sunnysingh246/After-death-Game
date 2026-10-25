@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import Survivor from "./Survivor";
+import WoodChips from "./WoodChips";
 
 const soundEffects = {
     swing: "/sounds/axe-swing.mp3",
@@ -24,6 +25,7 @@ function playSound(name) {
 
 function WorldTree({ fallProgress = 0, hitCount = 0 }) {
     const treeRef = useRef();
+    const shakeRef = useRef();
     const previousHit = useRef(hitCount);
     const shakeTime = useRef(0);
 
@@ -35,22 +37,23 @@ function WorldTree({ fallProgress = 0, hitCount = 0 }) {
     }, [hitCount]);
 
     useFrame((_, delta) => {
-        if (!treeRef.current) return;
+        if (!treeRef.current || !shakeRef.current) return;
 
         if (shakeTime.current > 0) {
             shakeTime.current -= delta;
-            const strength = Math.max(0, shakeTime.current) * 0.22;
-            treeRef.current.rotation.x = Math.sin(shakeTime.current * 75) * strength;
-            treeRef.current.rotation.z =
-                Math.cos(shakeTime.current * 65) * strength * 0.6;
+            const strength = THREE.MathUtils.clamp(shakeTime.current / 0.22, 0, 1);
+            const oscillation = Math.sin((1 - strength) * Math.PI * 8);
+            shakeRef.current.rotation.x = oscillation * strength * 0.08;
+            shakeRef.current.rotation.z = oscillation * strength * 0.12;
         } else {
-            treeRef.current.rotation.x = 0;
-            treeRef.current.rotation.z = 0;
+            shakeRef.current.rotation.x = 0;
+            shakeRef.current.rotation.z = 0;
         }
 
         // The tree tips over during the final part of the chopping sequence.
         const fall = THREE.MathUtils.clamp(fallProgress, 0, 1);
-        const targetFallAngle = -fall * (Math.PI * 0.46);
+        const easedFall = THREE.MathUtils.smoothstep(fall, 0, 1);
+        const targetFallAngle = -easedFall * (Math.PI * 0.46);
         treeRef.current.rotation.z = THREE.MathUtils.lerp(
             treeRef.current.rotation.z,
             targetFallAngle,
@@ -60,23 +63,25 @@ function WorldTree({ fallProgress = 0, hitCount = 0 }) {
 
     return (
         <group ref={treeRef} position={[0, 0, 0]}>
-            {/* Trunk */}
-            <mesh position={[0, 0.65, 0]} castShadow>
-                <cylinderGeometry args={[0.13, 0.2, 1.3, 8]} />
-                <meshStandardMaterial color="#755039" roughness={1} />
-            </mesh>
+            <group ref={shakeRef}>
+                {/* Trunk */}
+                <mesh position={[0, 0.65, 0]} castShadow>
+                    <cylinderGeometry args={[0.13, 0.2, 1.3, 8]} />
+                    <meshStandardMaterial color="#755039" roughness={1} />
+                </mesh>
 
-            {/* Lower leaves */}
-            <mesh position={[0, 1.6, 0]} castShadow>
-                <coneGeometry args={[0.85, 1.8, 8]} />
-                <meshStandardMaterial color="#4e8050" roughness={1} />
-            </mesh>
+                {/* Lower leaves */}
+                <mesh position={[0, 1.6, 0]} castShadow>
+                    <coneGeometry args={[0.85, 1.8, 8]} />
+                    <meshStandardMaterial color="#4e8050" roughness={1} />
+                </mesh>
 
-            {/* Upper leaves */}
-            <mesh position={[0, 2.15, 0]} castShadow>
-                <coneGeometry args={[0.58, 1.3, 8]} />
-                <meshStandardMaterial color="#6a9c5b" roughness={1} />
-            </mesh>
+                {/* Upper leaves */}
+                <mesh position={[0, 2.15, 0]} castShadow>
+                    <coneGeometry args={[0.58, 1.3, 8]} />
+                    <meshStandardMaterial color="#6a9c5b" roughness={1} />
+                </mesh>
+            </group>
         </group>
     );
 }
@@ -95,9 +100,9 @@ function Player({ onPositionChange, isChopping, onAxeSwing, onAxeHit }) {
     const keys = useRef({});
     const direction = useRef(new THREE.Vector3());
     const cameraTarget = useRef(new THREE.Vector3());
+    const visual = useRef();
+    const walkTime = useRef(0);
     const { camera } = useThree();
-    const [moving, setMoving] = useState(false);
-    const movingRef = useRef(false);
 
     useEffect(() => {
         const allowedKeys = [
@@ -161,13 +166,13 @@ function Player({ onPositionChange, isChopping, onAxeSwing, onAxeHit }) {
         player.current.position.x = THREE.MathUtils.clamp(player.current.position.x, -24, 24);
         player.current.position.z = THREE.MathUtils.clamp(player.current.position.z, -24, 24);
 
-        if (movingRef.current !== isMoving) {
-            movingRef.current = isMoving;
-            setMoving(isMoving);
+        walkTime.current += delta * (isMoving ? 10 : 0);
+        if (visual.current) {
+            visual.current.userData.moving = isMoving;
+            visual.current.position.y = isMoving
+                ? Math.abs(Math.sin(walkTime.current * 2)) * 0.07
+                : THREE.MathUtils.damp(visual.current.position.y, 0, 12, delta);
         }
-
-        // Let the Survivor component know whether the character is walking.
-        player.current.userData.moving = isMoving;
 
         onPositionChange?.(player.current.position);
 
@@ -192,13 +197,7 @@ function Player({ onPositionChange, isChopping, onAxeSwing, onAxeHit }) {
 
     return (
         <group ref={player}>
-            <group
-                position={[
-                    0,
-                    moving ? Math.abs(Math.sin(performance.now() * 0.01)) * 0.06 : 0,
-                    0,
-                ]}
-            >
+            <group ref={visual}>
                 <Survivor
                     isChopping={isChopping}
                     onAxeSwing={onAxeSwing}
@@ -244,6 +243,8 @@ function Environment({
     const choppingTreeIdRef = useRef(null);
     const chopStartRef = useRef(0);
     const finishingRef = useRef(false);
+    const [woodChipEffects, setWoodChipEffects] = useState([]);
+    const effectId = useRef(0);
 
     useEffect(() => {
         treesRef.current = trees;
@@ -279,13 +280,33 @@ function Environment({
 
     const handleAxeHit = useCallback(() => {
         onAxeHit?.();
+
         const targetId = choppingTreeIdRef.current;
-        if (targetId !== null) {
-            setHitCounts((previous) => ({
-                ...previous,
-                [targetId]: (previous[targetId] || 0) + 1,
-            }));
-        }
+
+        if (targetId === null) return;
+
+        const targetTree = treesRef.current.find(
+            (tree) => tree.id === targetId
+        );
+
+        if (!targetTree) return;
+
+        setHitCounts((previous) => ({
+            ...previous,
+            [targetId]: (previous[targetId] || 0) + 1,
+        }));
+
+        const [treeX, , treeZ] = targetTree.position;
+
+        const id = ++effectId.current;
+
+        setWoodChipEffects((previous) => [
+            ...previous,
+            {
+                id,
+                position: [treeX, 0.9, treeZ],
+            },
+        ]);
     }, [onAxeHit]);
 
     // When chopping starts, update progress smoothly and finish after the tree falls.
@@ -373,7 +394,6 @@ function Environment({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [hasAxe, onWoodCollected, onMessage, setIsChopping]);
 
-    const activeTree = trees.find((tree) => tree.id === choppingTreeId);
     const fallProgress = chopProgress < 0.72
         ? 0
         : (chopProgress - 0.72) / 0.28;
@@ -412,6 +432,16 @@ function Environment({
                     </group>
                 );
             })}
+
+            {woodChipEffects.map((effect) => (
+                <WoodChips
+                    key={effect.id}
+                    position={effect.position}
+                    onComplete={() => setWoodChipEffects((previous) =>
+                        previous.filter((item) => item.id !== effect.id)
+                    )}
+                />
+            ))}
 
             <Rock position={[-4, 0, 2]} />
             <Rock position={[5, 0, 5]} />

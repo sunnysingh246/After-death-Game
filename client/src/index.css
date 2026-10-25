@@ -136,6 +136,7 @@ button:focus-visible {
 
 .hero-content {
   width: min(100%, 800px);
+  animation: hero-enter 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .hero-content h1 {
@@ -164,10 +165,51 @@ button:focus-visible {
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 1px;
+  transition: background-color 180ms ease, transform 180ms ease;
 }
 
 .primary-button:hover {
   background: #d7e9ba;
+  transform: translateY(-2px);
+}
+
+.home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.world-button {
+  min-height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 0 20px;
+  border: 1px solid #71836e;
+  color: #e8ece9;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-decoration: none;
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.world-button:hover {
+  background: #ffffff12;
+  border-color: #c0d99a;
+  transform: translateY(-2px);
+}
+
+.world-button:focus-visible {
+  outline: 2px solid #d8edb5;
+  outline-offset: 4px;
+}
+
+.world-button svg {
+  color: #c0d99a;
 }
 
 .world-stats {
@@ -197,6 +239,31 @@ button:focus-visible {
   position: absolute;
   right: 5%;
   bottom: 28px;
+  animation: hero-enter 900ms 180ms both;
+}
+
+@keyframes hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-content,
+  .hero-footer {
+    animation: none;
+  }
+
+  .primary-button,
+  .world-button {
+    transition: none;
+  }
 }
 
 .game-page {
