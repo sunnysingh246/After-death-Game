@@ -563,3 +563,75 @@ button:focus-visible {
     gap: 10px;
   }
 }
+
+
+.game3d {
+  width: 100%;
+  min-width: 0;
+  color: #e8ece9;
+  background: #101512;
+  border: 1px solid #3a463d;
+  overflow: hidden;
+}
+
+.game3d-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #171e19;
+  border-bottom: 1px solid #3a463d;
+}
+
+.game3d-hud > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.game3d-hud strong {
+  letter-spacing: 2px;
+}
+
+.game3d-hud span,
+.player-coordinates {
+  color: #b6cf8f;
+  font-size: 11px;
+}
+
+.game3d-canvas {
+  height: 520px;
+  position: relative;
+  background: #c6d5bd;
+}
+
+.game3d-canvas canvas {
+  display: block;
+  outline: none;
+}
+
+.game3d-controls {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  padding: 14px;
+  background: #171e19;
+  color: #aab5a9;
+  font-size: 12px;
+}
+
+.game3d-controls b {
+  color: #d2e6ae;
+}
+
+@media (max-width: 600px) {
+  .game3d-canvas {
+    height: 380px;
+  }
+
+  .game3d-hud {
+    padding: 12px;
+  }
+}
