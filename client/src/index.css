@@ -255,6 +255,7 @@ button:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .hero-content,
   .hero-footer {
     animation: none;
@@ -703,7 +704,7 @@ button:focus-visible {
   }
 }
 
-```css .player-inventory {
+.player-inventory {
   padding: 10px 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
@@ -780,55 +781,55 @@ button:focus-visible {
 }
 
 .chop-progress-panel {
-    position: absolute;
-    z-index: 10;
-    left: 50%;
-    bottom: 110px;
-    transform: translateX(-50%);
-    width: min(320px, 85%);
-    padding: 14px;
-    border: 1px solid #52654a;
-    border-radius: 10px;
-    background: rgba(20, 31, 23, 0.95);
-    color: #e5eddc;
+  position: absolute;
+  z-index: 10;
+  left: 50%;
+  bottom: 110px;
+  transform: translateX(-50%);
+  width: min(320px, 85%);
+  padding: 14px;
+  border: 1px solid #52654a;
+  border-radius: 10px;
+  background: rgba(20, 31, 23, 0.95);
+  color: #e5eddc;
 }
 
 .chop-progress-label {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 8px;
-    font-size: 12px;
-    font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .chop-progress-track {
-    height: 9px;
-    overflow: hidden;
-    border-radius: 20px;
-    background: #354236;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #354236;
 }
 
 .chop-progress-fill {
-    width: 100%;
-    height: 100%;
-    transform: scaleX(0);
-    transform-origin: left;
-    background: #b9d994;
-    animation: chop-progress 3.2s linear forwards;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: #b9d994;
+  animation: chop-progress 3.2s linear forwards;
 }
 
 @keyframes chop-progress {
-    to {
-        transform: scaleX(1);
-    }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .sound-toggle {
-    padding: 5px 9px;
-    border: 1px solid #52654a;
-    border-radius: 5px;
-    background: #26362a;
-    color: #e5eddc;
-    cursor: pointer;
+  padding: 5px 9px;
+  border: 1px solid #52654a;
+  border-radius: 5px;
+  background: #26362a;
+  color: #e5eddc;
+  cursor: pointer;
 }

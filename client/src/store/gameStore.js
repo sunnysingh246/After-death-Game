@@ -25,14 +25,66 @@ const BUILDINGS = {
     },
 };
 
+const STORAGE_KEY = "after-death-save";
+
+function loadSavedGame() {
+    if (typeof window === "undefined") return {};
+
+    try {
+        const serialized = window.localStorage.getItem(STORAGE_KEY);
+        if (!serialized) return {};
+
+        const savedGame = JSON.parse(serialized);
+        if (!savedGame || typeof savedGame !== "object" || Array.isArray(savedGame)) {
+            throw new Error("Saved game must be an object.");
+        }
+
+        const resources = { ...INITIAL_RESOURCES };
+        for (const key of Object.keys(INITIAL_RESOURCES)) {
+            const value = savedGame.resources?.[key];
+            if (Number.isFinite(value) && value >= 0) resources[key] = value;
+        }
+
+        const buildings = Array.isArray(savedGame.buildings)
+            ? savedGame.buildings
+                .filter((building) =>
+                    building &&
+                    typeof building.id === "string" &&
+                    Object.hasOwn(BUILDINGS, building.type)
+                )
+                .map((building) => ({
+                    id: building.id,
+                    type: building.type,
+                    name: BUILDINGS[building.type].name,
+                }))
+            : [];
+
+        return {
+            resources,
+            buildings,
+            civilizationName:
+                typeof savedGame.civilizationName === "string"
+                    ? savedGame.civilizationName
+                    : "New Dawn",
+            gameStarted: typeof savedGame.gameStarted === "boolean"
+                ? savedGame.gameStarted
+                : false,
+        };
+    } catch (error) {
+        console.error("Could not load game:", error);
+        return {};
+    }
+}
+
+const savedGame = loadSavedGame();
+
 export const useGameStore = create((set, get) => ({
-    resources: INITIAL_RESOURCES,
+    resources: savedGame.resources || { ...INITIAL_RESOURCES },
 
-    buildings: [],
+    buildings: savedGame.buildings || [],
 
-    civilizationName: "New Dawn",
-
-    gameStarted: false,
+    civilizationName: savedGame.civilizationName ?? "New Dawn",
+    gameStarted: savedGame.gameStarted ?? false,
 
     startGame: () => {
         set({ gameStarted: true });
@@ -113,7 +165,7 @@ export const useGameStore = create((set, get) => ({
 useGameStore.subscribe((state) => {
     try {
         localStorage.setItem(
-            "after-death-save",
+            STORAGE_KEY,
             JSON.stringify({
                 resources: state.resources,
                 buildings: state.buildings,

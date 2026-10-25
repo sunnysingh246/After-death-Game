@@ -1,7 +1,6 @@
 import {
     Pickaxe,
     FlaskConical,
-    Hammer,
     RotateCcw,
 } from "lucide-react";
 import { useEffect } from "react";

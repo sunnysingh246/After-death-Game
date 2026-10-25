@@ -24,7 +24,11 @@ io.on("connection", (socket) => {
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {
-    await connectDb()
+    if (process.env.MONGODB_URI || process.env.MONGO_URI) {
+        await connectDb();
+    } else {
+        console.warn("MongoDB URI not set; starting without database access.");
+    }
 
     server.listen(PORT, () => {
         console.log(`AFTER DEATH server running on port ${PORT}`);
@@ -32,4 +36,3 @@ async function startServer() {
 }
 
 startServer();
-
