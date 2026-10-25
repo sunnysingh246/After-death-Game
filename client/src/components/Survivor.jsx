@@ -2,6 +2,8 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
+const clamp01 = (value) => THREE.MathUtils.clamp(value, 0, 1);
+
 export default function Survivor({
     isChopping = false,
     onAxeSwing,
@@ -13,95 +15,112 @@ export default function Survivor({
     const leftLeg = useRef();
     const rightLeg = useRef();
     const axe = useRef();
+
     const previousChopping = useRef(false);
     const previousPhase = useRef(0);
     const elapsedChopping = useRef(0);
+    const impactKick = useRef(0);
 
     useFrame((state, delta) => {
         if (!body.current) return;
 
         const moving = body.current.parent?.userData.moving ?? false;
+        const safeDelta = Math.min(delta, 0.05);
 
         if (isChopping) {
             if (!previousChopping.current) {
                 elapsedChopping.current = 0;
                 previousPhase.current = 0;
+                impactKick.current = 0;
             }
 
-            elapsedChopping.current += delta;
-            const cycleDuration = 0.8;
+            elapsedChopping.current += safeDelta;
+
+            // A slower, more readable 1.05-second chop: wind-up, strike, recovery.
+            const cycleDuration = 1.05;
             const phase = (elapsedChopping.current % cycleDuration) / cycleDuration;
 
-            // Sound events are fired at the matching animation phases.
-            if (phase < previousPhase.current) {
-                previousPhase.current = 0;
-            }
-            if (previousPhase.current < 0.34 && phase >= 0.34) {
-                onAxeSwing?.();
-            }
+            if (phase < previousPhase.current) previousPhase.current = 0;
+
+            if (previousPhase.current < 0.36 && phase >= 0.36) onAxeSwing?.();
             if (previousPhase.current < 0.53 && phase >= 0.53) {
                 onAxeHit?.();
+                impactKick.current = 1;
             }
             previousPhase.current = phase;
 
-            let angle;
+            let armAngle;
             let bodyLean;
-            if (phase < 0.34) {
-                const windup = THREE.MathUtils.smoothstep(phase / 0.34, 0, 1);
-                angle = THREE.MathUtils.lerp(0, -2, windup);
-                bodyLean = -0.12 * windup;
+            let bodyTwist;
+
+            if (phase < 0.36) {
+                // Pull the axe up and back before the hit.
+                const t = THREE.MathUtils.smoothstep(phase / 0.36, 0, 1);
+                armAngle = THREE.MathUtils.lerp(0.05, -2.05, t);
+                bodyLean = THREE.MathUtils.lerp(0, 0.16, t);
+                bodyTwist = THREE.MathUtils.lerp(0, -0.12, t);
             } else if (phase < 0.53) {
-                const strike = THREE.MathUtils.smoothstep(
-                    (phase - 0.34) / 0.19,
-                    0,
-                    1
-                );
-                angle = THREE.MathUtils.lerp(-2, 1.1, strike);
-                bodyLean = THREE.MathUtils.lerp(-0.12, 0.18, strike);
+                // Fast acceleration into the trunk.
+                const t = THREE.MathUtils.smoothstep((phase - 0.36) / 0.17, 0, 1);
+                armAngle = THREE.MathUtils.lerp(-2.05, 0.9, t);
+                bodyLean = THREE.MathUtils.lerp(0.16, -0.16, t);
+                bodyTwist = THREE.MathUtils.lerp(-0.12, 0.08, t);
             } else {
-                const recovery = THREE.MathUtils.smoothstep(
-                    (phase - 0.53) / 0.47,
-                    0,
-                    1
-                );
-                angle = THREE.MathUtils.lerp(1.1, 0, recovery);
-                bodyLean = THREE.MathUtils.lerp(0.18, 0, recovery);
+                // Settle back into a ready stance rather than snapping to idle.
+                const t = THREE.MathUtils.smoothstep((phase - 0.53) / 0.47, 0, 1);
+                armAngle = THREE.MathUtils.lerp(0.9, 0.05, t);
+                bodyLean = THREE.MathUtils.lerp(-0.16, 0, t);
+                bodyTwist = THREE.MathUtils.lerp(0.08, 0, t);
             }
 
-            if (rightArm.current) rightArm.current.rotation.x = angle;
-            if (leftArm.current) leftArm.current.rotation.x = -0.35;
-            if (axe.current) axe.current.rotation.x = -angle * 0.45;
-            body.current.rotation.x = bodyLean;
-            body.current.position.y = phase < 0.34
-                ? -0.06 * Math.sin((phase / 0.34) * Math.PI)
-                : 0;
-            if (leftLeg.current) leftLeg.current.rotation.x = 0;
-            if (rightLeg.current) rightLeg.current.rotation.x = 0;
+            impactKick.current = Math.max(0, impactKick.current - safeDelta * 5.5);
+            const kick = impactKick.current;
+
+            if (rightArm.current) {
+                rightArm.current.rotation.set(armAngle, 0, -0.08 + kick * 0.08);
+            }
+            if (leftArm.current) {
+                leftArm.current.rotation.set(-0.42 + kick * 0.12, 0, 0.18);
+            }
+            if (axe.current) {
+                // Keep the axe head leading the strike, then add a small impact recoil.
+                axe.current.rotation.set(0.18 - kick * 0.16, 0, -0.12);
+            }
+            body.current.rotation.set(bodyLean, bodyTwist, 0);
+            body.current.position.y = -0.035 * Math.sin(Math.PI * clamp01(phase / 0.36));
+            body.current.scale.set(1, 1, 1);
+
+            if (leftLeg.current) leftLeg.current.rotation.set(0.08, 0, 0.04);
+            if (rightLeg.current) rightLeg.current.rotation.set(-0.08, 0, -0.04);
         } else {
             elapsedChopping.current = 0;
             previousPhase.current = 0;
-            if (axe.current) axe.current.rotation.x = 0;
-            if (body.current) body.current.rotation.x = 0;
-            if (body.current) body.current.position.y = 0;
+            impactKick.current = 0;
+
+            body.current.rotation.set(0, 0, 0);
+            body.current.position.y = 0;
+            body.current.scale.set(
+                1,
+                1 + Math.sin(state.clock.elapsedTime * 2.2) * 0.012,
+                1
+            );
+            if (axe.current) axe.current.rotation.set(0, 0, -0.15);
 
             if (moving) {
-                const swing = Math.sin(state.clock.elapsedTime * 9) * 0.55;
-                if (leftArm.current) leftArm.current.rotation.x = swing;
-                if (rightArm.current) rightArm.current.rotation.x = -swing;
-                if (leftLeg.current) leftLeg.current.rotation.x = -swing;
-                if (rightLeg.current) rightLeg.current.rotation.x = swing;
+                const swing = Math.sin(state.clock.elapsedTime * 9) * 0.48;
+                if (leftArm.current) leftArm.current.rotation.set(swing, 0, 0);
+                if (rightArm.current) rightArm.current.rotation.set(-swing, 0, 0);
+                if (leftLeg.current) leftLeg.current.rotation.set(-swing, 0, 0);
+                if (rightLeg.current) rightLeg.current.rotation.set(swing, 0, 0);
             } else {
-                const idleSway = Math.sin(state.clock.elapsedTime * 1.8) * 0.035;
-                if (leftArm.current) leftArm.current.rotation.x = idleSway;
-                if (rightArm.current) rightArm.current.rotation.x = -idleSway;
-                if (leftLeg.current) leftLeg.current.rotation.x = 0;
-                if (rightLeg.current) rightLeg.current.rotation.x = 0;
+                const idleSway = Math.sin(state.clock.elapsedTime * 1.8) * 0.025;
+                if (leftArm.current) leftArm.current.rotation.set(idleSway, 0, 0.02);
+                if (rightArm.current) rightArm.current.rotation.set(-idleSway, 0, -0.02);
+                if (leftLeg.current) leftLeg.current.rotation.set(0, 0, 0);
+                if (rightLeg.current) rightLeg.current.rotation.set(0, 0, 0);
             }
-
-            body.current.scale.y = 1 + Math.sin(state.clock.elapsedTime * 2.2) * 0.012;
         }
 
-        if (isChopping) body.current.scale.y = 1;
         previousChopping.current = isChopping;
     });
 

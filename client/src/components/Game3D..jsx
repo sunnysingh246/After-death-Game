@@ -53,11 +53,11 @@ function WorldTree({ fallProgress = 0, hitCount = 0 }) {
         // The tree tips over during the final part of the chopping sequence.
         const fall = THREE.MathUtils.clamp(fallProgress, 0, 1);
         const easedFall = THREE.MathUtils.smoothstep(fall, 0, 1);
-        const targetFallAngle = -easedFall * (Math.PI * 0.46);
+        const targetFallAngle = -easedFall * (Math.PI * 0.49);
         treeRef.current.rotation.z = THREE.MathUtils.lerp(
             treeRef.current.rotation.z,
             targetFallAngle,
-            1 - Math.exp(-7 * delta)
+            1 - Math.exp(-9 * delta)
         );
     });
 
@@ -318,7 +318,7 @@ function Environment({
 
         const interval = window.setInterval(() => {
             const elapsed = performance.now() - chopStartRef.current;
-            const progress = Math.min(elapsed / 3200, 1);
+            const progress = Math.min(elapsed / 3400, 1);
             setChopProgress(progress);
 
             if (progress >= 1 && !finishingRef.current) {
@@ -394,9 +394,9 @@ function Environment({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [hasAxe, onWoodCollected, onMessage, setIsChopping]);
 
-    const fallProgress = chopProgress < 0.72
+    const fallProgress = chopProgress < 0.82
         ? 0
-        : (chopProgress - 0.72) / 0.28;
+        : (chopProgress - 0.82) / 0.18;
 
     return (
         <>
