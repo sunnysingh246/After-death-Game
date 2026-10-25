@@ -45,7 +45,7 @@ function Player({ onPositionChange }) {
     const keys = useRef({});
     const direction = useRef(new THREE.Vector3());
     const cameraTarget = useRef(new THREE.Vector3());
-   
+
 
     const { camera } = useThree();
 
@@ -53,115 +53,115 @@ function Player({ onPositionChange }) {
     const movingRef = useRef(false);
 
     // Keyboard movement
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-        const key = event.key.toLowerCase();
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            const key = event.key.toLowerCase();
 
-        if (
-            ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)
-        ) {
-            keys.current[key] = true;
+            if (
+                ["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)
+            ) {
+                keys.current[key] = true;
+            }
+        };
+
+        const handleKeyUp = (event) => {
+            const key = event.key.toLowerCase();
+            keys.current[key] = false;
+        };
+
+        const handleBlur = () => {
+            keys.current = {};
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        window.addEventListener("keyup", handleKeyUp);
+        window.addEventListener("blur", handleBlur);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("keyup", handleKeyUp);
+            window.removeEventListener("blur", handleBlur);
+        };
+    }, []);
+
+
+    useFrame((_, delta) => {
+        if (!player.current) return;
+
+        // 1. Read keyboard input
+        const input = keys.current;
+
+        // 2. Calculate movement direction
+        const x =
+            Number(Boolean(input.d || input.arrowright)) -
+            Number(Boolean(input.a || input.arrowleft));
+
+        const z =
+            Number(Boolean(input.s || input.arrowdown)) -
+            Number(Boolean(input.w || input.arrowup));
+
+        direction.current.set(x, 0, z);
+
+        const isMoving = direction.current.lengthSq() > 0;
+
+        // 3. Move the player
+        if (isMoving) {
+            direction.current.normalize();
+
+            player.current.position.addScaledVector(
+                direction.current,
+                5 * Math.min(delta, 0.05)
+            );
+
+            // Turn the player toward the movement direction
+            player.current.rotation.y = Math.atan2(
+                -direction.current.x,
+                -direction.current.z
+            );
         }
-    };
 
-    const handleKeyUp = (event) => {
-        const key = event.key.toLowerCase();
-        keys.current[key] = false;
-    };
-
-    const handleBlur = () => {
-        keys.current = {};
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    window.addEventListener("blur", handleBlur);
-
-    return () => {
-        window.removeEventListener("keydown", handleKeyDown);
-        window.removeEventListener("keyup", handleKeyUp);
-        window.removeEventListener("blur", handleBlur);
-    };
-}, []);
-
-   
-useFrame((_, delta) => {
-    if (!player.current) return;
-
-    // 1. Read keyboard input
-    const input = keys.current;
-
-    // 2. Calculate movement direction
-    const x =
-        Number(Boolean(input.d || input.arrowright)) -
-        Number(Boolean(input.a || input.arrowleft));
-
-    const z =
-        Number(Boolean(input.s || input.arrowdown)) -
-        Number(Boolean(input.w || input.arrowup));
-
-    direction.current.set(x, 0, z);
-
-    const isMoving = direction.current.lengthSq() > 0;
-
-    // 3. Move the player
-    if (isMoving) {
-        direction.current.normalize();
-
-        player.current.position.addScaledVector(
-            direction.current,
-            5 * Math.min(delta, 0.05)
+        // 4. Keep the player inside the world
+        player.current.position.x = THREE.MathUtils.clamp(
+            player.current.position.x,
+            -24,
+            24
         );
 
-        // Turn the player toward the movement direction
-        player.current.rotation.y = Math.atan2(
-            -direction.current.x,
-            -direction.current.z
+        player.current.position.z = THREE.MathUtils.clamp(
+            player.current.position.z,
+            -24,
+            24
         );
-    }
 
-    // 4. Keep the player inside the world
-    player.current.position.x = THREE.MathUtils.clamp(
-        player.current.position.x,
-        -24,
-        24
-    );
+        // 5. Update movement animation state
+        if (movingRef.current !== isMoving) {
+            movingRef.current = isMoving;
+            setMoving(isMoving);
+        }
 
-    player.current.position.z = THREE.MathUtils.clamp(
-        player.current.position.z,
-        -24,
-        24
-    );
+        // 6. Report player position
+        onPositionChange?.(player.current.position);
 
-    // 5. Update movement animation state
-    if (movingRef.current !== isMoving) {
-        movingRef.current = isMoving;
-        setMoving(isMoving);
-    }
+        // 7. Make the camera follow the player
+        cameraTarget.current.set(
+            player.current.position.x,
+            player.current.position.y + 1.5,
+            player.current.position.z
+        );
 
-    // 6. Report player position
-    onPositionChange?.(player.current.position);
+        const desiredCamera = new THREE.Vector3(
+            player.current.position.x,
+            player.current.position.y + 5,
+            player.current.position.z + 7
+        );
 
-    // 7. Make the camera follow the player
-    cameraTarget.current.set(
-        player.current.position.x,
-        player.current.position.y + 1.5,
-        player.current.position.z
-    );
+        camera.position.lerp(
+            desiredCamera,
+            1 - Math.exp(-5 * Math.min(delta, 0.05))
+        );
 
-    const desiredCamera = new THREE.Vector3(
-        player.current.position.x,
-        player.current.position.y + 5,
-        player.current.position.z + 7
-    );
-
-    camera.position.lerp(
-        desiredCamera,
-        1 - Math.exp(-5 * Math.min(delta, 0.05))
-    );
-
-    camera.lookAt(cameraTarget.current);
-});
+        camera.lookAt(cameraTarget.current);
+    });
 
 
     return (
@@ -189,7 +189,7 @@ useFrame((_, delta) => {
 }
 
 // ---------------- ENVIRONMENT COMPONENT ----------------
-function Environment({ onPositionChange, onWoodCollected, onMessage }) {
+function Environment({ onPositionChange, onWoodCollected, onMessage, hasAxe, }) {
     const [trees, setTrees] = useState([
         { id: 1, position: [-5, 0, -4] },
         { id: 2, position: [4, 0, -6] },
@@ -251,6 +251,10 @@ function Environment({ onPositionChange, onWoodCollected, onMessage }) {
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (event.code !== "KeyE" || event.repeat) return;
+            // if (!hasAxe) {
+            //     onMessage?.("🪓 Craft an axe first! You need 10 wood.");
+            //     return;
+            // }
 
             const targetTreeId = nearbyTreeIdRef.current;
 
@@ -277,8 +281,8 @@ function Environment({ onPositionChange, onWoodCollected, onMessage }) {
             setNearbyTreeId(null);
 
             // Give player 10 wood
-            onWoodCollected?.(10);
-            onMessage?.("🌲 Tree collected! +10 Wood");
+            onWoodCollected?.(15);
+            onMessage?.("🪓 Tree chopped! +15 Wood");
         };
 
         window.addEventListener("keydown", handleKeyDown);
@@ -286,7 +290,7 @@ function Environment({ onPositionChange, onWoodCollected, onMessage }) {
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [onWoodCollected, onMessage]);
+    }, [onWoodCollected, onMessage, hasAxe]);
 
     return (
         <>
@@ -339,8 +343,9 @@ function Environment({ onPositionChange, onWoodCollected, onMessage }) {
 export default function Game3D() {
     const [position, setPosition] = useState({ x: 0, z: 0 });
     const [wood, setWood] = useState(0);
+    const [hasAxe, setHasAxe] = useState(false);
+    const [isChopping, setIsChopping] = useState(false);
     const [message, setMessage] = useState("");
-
     const messageTimeout = useRef(null);
 
     const showMessage = useCallback((text) => {
@@ -367,6 +372,23 @@ export default function Game3D() {
         setWood((previousWood) => previousWood + amount);
     }, []);
 
+    const craftAxe = () => {
+        if (hasAxe) {
+            showMessage("You already have an axe!");
+            return;
+        }
+
+        if (wood < 10) {
+            showMessage("You need 10 wood to craft an axe!");
+            return;
+        }
+
+        setWood((previousWood) => previousWood - 10);
+        setHasAxe(true);
+
+        showMessage("🪓 Wooden Axe crafted!");
+    };
+
     return (
         <div className="game3d">
             {/* Top HUD */}
@@ -381,7 +403,8 @@ export default function Game3D() {
                 </div>
 
                 <div className="player-inventory">
-                    🪵 Wood: {wood}
+                    <span>🪵 Wood: {wood}</span>
+                    <span>{hasAxe ? "🪓 Axe: Equipped" : "🪓 Axe: Not Crafted"}</span>
                 </div>
             </div>
 
@@ -407,6 +430,7 @@ export default function Game3D() {
                         onPositionChange={setPosition}
                         onWoodCollected={collectWood}
                         onMessage={showMessage}
+                        hasAxe={hasAxe}
                     />
                 </Canvas>
             </div>
@@ -420,6 +444,28 @@ export default function Game3D() {
 
             {/* Controls */}
             <div className="game3d-controls">
+                <div className="crafting-panel">
+                    <h3>🛠️ Crafting</h3>
+
+                    <div className="crafting-item">
+                        <div>
+                            <strong>🪓 Wooden Axe</strong>
+                            <p>Required: 10 Wood</p>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={craftAxe}
+                            disabled={hasAxe || wood < 10}
+                        >
+                            {hasAxe
+                                ? "AXE CRAFTED"
+                                : wood < 10
+                                    ? "NEED 10 WOOD"
+                                    : "CRAFT AXE"}
+                        </button>
+                    </div>
+                </div>
                 <span><b>W A S D</b> Move character</span>
                 <span><b>E</b> Collect wood</span>
                 <span><b>Follow Camera</b> Camera follows player</span>
