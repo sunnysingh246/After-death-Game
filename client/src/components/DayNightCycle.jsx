@@ -10,8 +10,11 @@ export default function DayNightCycle({ onNightChange }) {
 
   useEffect(() => {
     const startTime = performance.now();
+
     const timer = setInterval(() => {
-      const seconds = ((performance.now() - startTime) / 1000) % CYCLE_DURATION;
+      const seconds =
+        ((performance.now() - startTime) / 1000) % CYCLE_DURATION;
+
       setElapsed(seconds);
     }, 250);
 
@@ -19,8 +22,15 @@ export default function DayNightCycle({ onNightChange }) {
   }, []);
 
   const progress = elapsed / CYCLE_DURATION;
-  const daylight = Math.max(0, Math.sin(progress * Math.PI * 2 - Math.PI / 2));
-  const isNight = daylight < 0.08;
+
+  // First 60 seconds = day, next 60 seconds = night.
+  const isNight = progress >= 0.5;
+
+  // Smooth lighting transition between day and night.
+  const daylight = Math.max(
+    0,
+    Math.sin(progress * Math.PI * 2)
+  );
 
   const skyColor = new THREE.Color("#101a35").lerp(
     new THREE.Color("#b8d8ee"),
@@ -29,8 +39,11 @@ export default function DayNightCycle({ onNightChange }) {
 
   useEffect(() => {
     scene.background = skyColor.clone();
+
     const previousFog = scene.fog;
+
     scene.fog = new THREE.Fog(skyColor.clone(), 25, 55);
+
     return () => {
       scene.fog = previousFog;
     };
@@ -42,14 +55,17 @@ export default function DayNightCycle({ onNightChange }) {
 
   return (
     <>
-      <ambientLight intensity={0.15 + daylight * 1.2} />
+      <ambientLight
+        intensity={isNight ? 0.2 : 0.15 + daylight * 1.2}
+      />
+
       <directionalLight
         position={[
           Math.cos(progress * Math.PI * 2) * 15,
           Math.max(1, daylight * 20),
           Math.sin(progress * Math.PI * 2) * 15,
         ]}
-        intensity={0.15 + daylight * 2}
+        intensity={isNight ? 0.25 : 0.15 + daylight * 2}
         castShadow
       />
     </>
