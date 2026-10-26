@@ -1,10 +1,274 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import Survivor from "./Survivor";
 import WoodChips from "./WoodChips";
 
-function WorldTree({ fallProgress = 0, hitCount = 0 }) {
+function createGroundTexture() {
+    const size = 128;
+    const data = new Uint8Array(size * size * 4);
+    for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+            const index = (y * size + x) * 4;
+            const broadShade = Math.sin(x * 0.11 + Math.cos(y * 0.08)) * 10;
+            const grain = Math.random() * 35;
+            const damp = Math.random() > 0.91 ? 28 : 0;
+            data[index] = 86 + broadShade + grain + damp;
+            data[index + 1] = 91 + broadShade + grain;
+            data[index + 2] = 70 + broadShade + grain * 0.7;
+            data[index + 3] = 255;
+        }
+    }
+
+    const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(16, 16);
+    texture.needsUpdate = true;
+    return texture;
+}
+
+function createBarkTexture() {
+    const size = 64;
+    const data = new Uint8Array(size * size * 4);
+    for (let y = 0; y < size; y += 1) {
+        for (let x = 0; x < size; x += 1) {
+            const index = (y * size + x) * 4;
+            const grain = Math.random() * 52;
+            const groove = Math.sin(x * 0.8 + Math.sin(y * 0.14) * 2) * 18;
+            const shade = Math.max(0, Math.min(255, 105 + grain + groove));
+            data[index] = shade;
+            data[index + 1] = shade * 0.78;
+            data[index + 2] = shade * 0.59;
+            data[index + 3] = 255;
+        }
+    }
+
+    const texture = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(2, 3);
+    texture.needsUpdate = true;
+    return texture;
+}
+
+function createTrailShape() {
+    const shape = new THREE.Shape();
+    shape.moveTo(-2.1, -50);
+    shape.quadraticCurveTo(-0.7, -20, -1.1, -5);
+    shape.quadraticCurveTo(-2.2, 12, 0.6, 26);
+    shape.quadraticCurveTo(1.2, 38, 0.2, 50);
+    shape.lineTo(2.4, 50);
+    shape.quadraticCurveTo(3.1, 34, 2.1, 24);
+    shape.quadraticCurveTo(-0.1, 10, 1.2, -5);
+    shape.quadraticCurveTo(1.6, -25, 2.1, -50);
+    shape.closePath();
+    return shape;
+}
+
+const groundTexture = createGroundTexture();
+const barkTexture = createBarkTexture();
+const trailShape = createTrailShape();
+
+const BACKGROUND_TREES = Array.from({ length: 84 }, (_, index) => {
+    const angle = index * 2.399963;
+    const radius = 17 + (index % 6) * 3.8;
+    return {
+        position: [Math.cos(angle) * radius, 0, Math.sin(angle) * radius],
+        height: 8.5 + (index % 5) * 1.3,
+        width: 1.35 + (index % 4) * 0.18,
+        color: ["#1d3428", "#263d2c", "#304431", "#26372a"][index % 4],
+    };
+});
+
+function setInstanceTransform(mesh, index, position, scale, rotation) {
+    const transform = new THREE.Object3D();
+    transform.position.set(...position);
+    transform.scale.set(...scale);
+    transform.rotation.set(...rotation);
+    transform.updateMatrix();
+    mesh.setMatrixAt(index, transform.matrix);
+}
+
+export function Forest() {
+    const trunkRef = useRef();
+    const lowerCanopyRef = useRef();
+    const middleCanopyRef = useRef();
+    const upperCanopyRef = useRef();
+    const rootsRef = useRef();
+    const branchesRef = useRef();
+
+    useLayoutEffect(() => {
+        const { current: trunks } = trunkRef;
+        const { current: lowerCanopies } = lowerCanopyRef;
+        const { current: middleCanopies } = middleCanopyRef;
+        const { current: upperCanopies } = upperCanopyRef;
+        const { current: roots } = rootsRef;
+        const { current: branches } = branchesRef;
+        if (!trunks || !lowerCanopies || !middleCanopies || !upperCanopies || !roots || !branches) return;
+
+        const leafColor = new THREE.Color();
+        BACKGROUND_TREES.forEach((tree, index) => {
+            const [x, , z] = tree.position;
+            const { height, width } = tree;
+            const rotation = index * 0.73;
+            setInstanceTransform(trunks, index, [x, height * 0.29, z], [width * 0.22, height * 0.58, width * 0.22], [0, rotation, 0]);
+            setInstanceTransform(lowerCanopies, index, [x, height * 0.61, z], [width * 0.69, height * 0.14, width * 0.69], [0, rotation, 0]);
+            setInstanceTransform(middleCanopies, index, [x + Math.cos(rotation) * 0.22, height * 0.74, z + Math.sin(rotation) * 0.22], [width * 0.76, height * 0.15, width * 0.76], [0, rotation + 0.3, 0]);
+            setInstanceTransform(upperCanopies, index, [x, height * 0.86, z], [width * 0.54, height * 0.13, width * 0.54], [0, rotation + 0.6, 0]);
+            leafColor.set(tree.color);
+            lowerCanopies.setColorAt(index, leafColor);
+            middleCanopies.setColorAt(index, leafColor.clone().multiplyScalar(1.1));
+            upperCanopies.setColorAt(index, leafColor.clone().multiplyScalar(1.2));
+
+            for (let root = 0; root < 4; root += 1) {
+                const angle = rotation + root * Math.PI / 2;
+                setInstanceTransform(
+                    roots,
+                    index * 4 + root,
+                    [x + Math.cos(angle) * width * 0.15, 0.15, z + Math.sin(angle) * width * 0.15],
+                    [width * 0.13, 0.42, width * 0.13],
+                    [Math.sin(angle) * -0.74, angle, Math.cos(angle) * 0.74]
+                );
+            }
+
+            for (let branch = 0; branch < 3; branch += 1) {
+                const angle = rotation + branch * (Math.PI * 2 / 3);
+                setInstanceTransform(
+                    branches,
+                    index * 3 + branch,
+                    [x + Math.cos(angle) * width * 0.14, height * (0.34 + branch * 0.1), z + Math.sin(angle) * width * 0.14],
+                    [width * 0.12, height * 0.12, width * 0.12],
+                    [Math.cos(angle) * 0.64, angle, Math.sin(angle) * 0.64]
+                );
+            }
+        });
+
+        [trunks, lowerCanopies, middleCanopies, upperCanopies, roots, branches].forEach((mesh) => {
+            mesh.instanceMatrix.needsUpdate = true;
+            if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+            mesh.computeBoundingSphere();
+        });
+    }, []);
+
+    return (
+        <>
+            <instancedMesh ref={trunkRef} args={[undefined, undefined, BACKGROUND_TREES.length]} castShadow receiveShadow>
+                <cylinderGeometry args={[0.15, 0.3, 1, 9]} />
+                <meshStandardMaterial map={barkTexture} color="#8b7962" roughness={1} />
+            </instancedMesh>
+            <instancedMesh ref={lowerCanopyRef} args={[undefined, undefined, BACKGROUND_TREES.length]} castShadow>
+                <sphereGeometry args={[1, 8, 6]} />
+                <meshStandardMaterial color="#ffffff" roughness={1} />
+            </instancedMesh>
+            <instancedMesh ref={middleCanopyRef} args={[undefined, undefined, BACKGROUND_TREES.length]} castShadow>
+                <sphereGeometry args={[1, 8, 6]} />
+                <meshStandardMaterial color="#ffffff" roughness={1} />
+            </instancedMesh>
+            <instancedMesh ref={upperCanopyRef} args={[undefined, undefined, BACKGROUND_TREES.length]} castShadow>
+                <sphereGeometry args={[1, 8, 6]} />
+                <meshStandardMaterial color="#ffffff" roughness={1} />
+            </instancedMesh>
+            <instancedMesh ref={rootsRef} args={[undefined, undefined, BACKGROUND_TREES.length * 4]} castShadow>
+                <cylinderGeometry args={[0.035, 0.13, 0.8, 6]} />
+                <meshStandardMaterial map={barkTexture} color="#76634e" roughness={1} />
+            </instancedMesh>
+            <instancedMesh ref={branchesRef} args={[undefined, undefined, BACKGROUND_TREES.length * 3]} castShadow>
+                <cylinderGeometry args={[0.1, 0.19, 1, 5]} />
+                <meshStandardMaterial map={barkTexture} color="#76634e" roughness={1} />
+            </instancedMesh>
+        </>
+    );
+}
+
+export function ForestGround() {
+    return (
+        <>
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
+                <planeGeometry args={[100, 100]} />
+                <meshStandardMaterial map={groundTexture} color="#ffffff" roughness={0.96} />
+            </mesh>
+            <mesh position={[0, -0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                <shapeGeometry args={[trailShape]} />
+                <meshStandardMaterial map={groundTexture} color="#c2a982" roughness={0.84} />
+            </mesh>
+            {[
+                [-2.8, -6.5, 0.72, 2.1], [2.9, 9.5, 0.88, 2.7],
+                [-2.7, 19, 0.65, 1.8], [3.1, -24, 0.74, 2.2],
+            ].map(([x, z, size, rotation], index) => (
+                <mesh key={`puddle-${index}`} position={[x, -0.018, z]} rotation={[-Math.PI / 2, 0, rotation]} scale={[size, size * 0.62, 1]} receiveShadow>
+                    <circleGeometry args={[1, 20]} />
+                    <meshStandardMaterial color="#566366" roughness={0.22} metalness={0.16} transparent opacity={0.64} />
+                </mesh>
+            ))}
+            {Array.from({ length: 115 }, (_, index) => {
+                const x = Math.sin(index * 91.7) * 22;
+                const z = Math.cos(index * 37.3) * 22;
+                const size = 0.04 + (index % 5) * 0.018;
+                return (
+                    <group key={`litter-${index}`} position={[x, -0.015, z]} rotation={[0, index * 1.7, 0]}>
+                        <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[1.6, 0.55, 1]}>
+                            <circleGeometry args={[size, 5]} />
+                            <meshStandardMaterial color={["#6b593c", "#514b35", "#7b6844", "#303b2a"][index % 4]} roughness={1} />
+                        </mesh>
+                        {index % 3 === 0 && (
+                            <mesh position={[0, 0.08, 0]} rotation={[0, 0, index % 2 ? 0.45 : -0.45]}>
+                                <coneGeometry args={[0.055, 0.24, 3]} />
+                                <meshStandardMaterial color="#415337" roughness={1} />
+                            </mesh>
+                        )}
+                    </group>
+                );
+            })}
+        </>
+    );
+}
+
+export function Campfire() {
+    const flameRef = useRef();
+    const innerFlameRef = useRef();
+    const lightRef = useRef();
+
+    useFrame(({ clock }) => {
+        const time = clock.elapsedTime;
+        const flicker = 0.88 + Math.sin(time * 17) * 0.12 + Math.sin(time * 29) * 0.06;
+        if (flameRef.current) flameRef.current.scale.set(1, flicker, 1);
+        if (innerFlameRef.current) innerFlameRef.current.scale.set(1, 0.9 + Math.sin(time * 22) * 0.12, 1);
+        if (lightRef.current) lightRef.current.intensity = 2.2 + flicker * 0.9;
+    });
+
+    return (
+        <group position={[3.8, 0, -1.8]}>
+            <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <circleGeometry args={[1.05, 16]} />
+                <meshStandardMaterial color="#292721" roughness={1} />
+            </mesh>
+            {Array.from({ length: 7 }, (_, index) => (
+                <mesh key={index} position={[Math.cos(index * 0.9) * 0.62, 0.09, Math.sin(index * 0.9) * 0.62]} rotation={[0, index * 0.9, Math.PI / 2]} castShadow>
+                    <cylinderGeometry args={[0.075, 0.09, 0.9, 7]} />
+                    <meshStandardMaterial map={barkTexture} color="#806044" roughness={1} />
+                </mesh>
+            ))}
+            <mesh position={[0, 0.17, 0]}>
+                <icosahedronGeometry args={[0.2, 0]} />
+                <meshStandardMaterial color="#e08032" emissive="#ff5a13" emissiveIntensity={2.3} roughness={0.72} />
+            </mesh>
+            <mesh ref={flameRef} position={[0, 0.53, 0]} scale={[1, 0.88, 1]}>
+                <coneGeometry args={[0.36, 0.88, 8]} />
+                <meshBasicMaterial color="#ff6224" />
+            </mesh>
+            <mesh ref={innerFlameRef} position={[0.015, 0.4, 0]} scale={[1, 0.9, 1]}>
+                <coneGeometry args={[0.2, 0.58, 7]} />
+                <meshBasicMaterial color="#ffc252" />
+            </mesh>
+            <pointLight ref={lightRef} position={[0, 0.68, 0]} color="#ff8a36" intensity={2.8} distance={11} decay={2} />
+        </group>
+    );
+}
+
+export function WorldTree({ fallProgress = 0, hitCount = 0 }) {
     const treeRef = useRef();
     const shakeRef = useRef();
     const previousHit = useRef(hitCount);
@@ -48,19 +312,28 @@ function WorldTree({ fallProgress = 0, hitCount = 0 }) {
                 {/* Trunk */}
                 <mesh position={[0, 0.65, 0]} castShadow>
                     <cylinderGeometry args={[0.13, 0.2, 1.3, 8]} />
-                    <meshStandardMaterial color="#3f3025" roughness={1} />
+                    <meshStandardMaterial map={barkTexture} color="#8b7962" roughness={1} />
                 </mesh>
 
-                {/* Lower leaves */}
-                <mesh position={[0, 1.6, 0]} castShadow>
-                    <coneGeometry args={[0.85, 1.8, 8]} />
-                    <meshStandardMaterial color="#29452f" roughness={1} />
+                <mesh position={[-0.32, 0.22, 0]} rotation={[0, 0, -0.7]} castShadow>
+                    <cylinderGeometry args={[0.035, 0.13, 1.05, 6]} />
+                    <meshStandardMaterial map={barkTexture} color="#76634e" roughness={1} />
                 </mesh>
-
-                {/* Upper leaves */}
-                <mesh position={[0, 2.15, 0]} castShadow>
-                    <coneGeometry args={[0.58, 1.3, 8]} />
-                    <meshStandardMaterial color="#3b5a3a" roughness={1} />
+                <mesh position={[0.32, 0.22, 0]} rotation={[0, 0, 0.7]} castShadow>
+                    <cylinderGeometry args={[0.035, 0.13, 1.05, 6]} />
+                    <meshStandardMaterial map={barkTexture} color="#76634e" roughness={1} />
+                </mesh>
+                <mesh position={[0, 1.62, 0]} scale={[0.95, 0.76, 0.82]} castShadow>
+                    <sphereGeometry args={[1, 10, 8]} />
+                    <meshStandardMaterial color="#263c2d" roughness={1} />
+                </mesh>
+                <mesh position={[-0.42, 1.82, 0.12]} scale={[0.55, 0.48, 0.5]} castShadow>
+                    <sphereGeometry args={[1, 8, 6]} />
+                    <meshStandardMaterial color="#314633" roughness={1} />
+                </mesh>
+                <mesh position={[0.38, 2.02, -0.08]} scale={[0.59, 0.52, 0.55]} castShadow>
+                    <sphereGeometry args={[1, 8, 6]} />
+                    <meshStandardMaterial color="#3a5037" roughness={1} />
                 </mesh>
             </group>
         </group>
@@ -431,48 +704,9 @@ function Environment({
 
     return (
         <>
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
-                <planeGeometry args={[100, 100]} />
-                <meshStandardMaterial color="#303d2c" roughness={1} />
-            </mesh>
-
-            {/* Muddy trail through the forest */}
-            <mesh position={[0, -0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-                <shapeGeometry args={[(() => { const s = new THREE.Shape(); s.moveTo(-2.1, -50); s.quadraticCurveTo(-0.7, -20, -1.1, -5); s.quadraticCurveTo(-2.2, 12, 0.6, 26); s.quadraticCurveTo(1.2, 38, 0.2, 50); s.lineTo(2.4, 50); s.quadraticCurveTo(3.1, 34, 2.1, 24); s.quadraticCurveTo(-0.1, 10, 1.2, -5); s.quadraticCurveTo(1.6, -25, 2.1, -50); s.closePath(); return s; })()]} />
-                <meshStandardMaterial color="#4b4030" roughness={1} />
-            </mesh>
-            {/* Forest floor detail: stones, leaf litter, grass clumps and broken branches */}
-            {Array.from({ length: 115 }, (_, i) => {
-                const x = Math.sin(i * 91.7) * 22;
-                const z = Math.cos(i * 37.3) * 22;
-                const size = 0.04 + (i % 5) * 0.018;
-                const nearTrail = Math.abs(x - Math.sin(z * 0.08) * 1.2) < 3;
-                return <group key={`litter-${i}`} position={[x, -0.015, z]} rotation={[0, i * 1.7, 0]}>
-                    <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[1.6, 0.55, 1]}>
-                        <circleGeometry args={[size * (nearTrail ? 1.8 : 1), 5]} />
-                        <meshStandardMaterial color={['#6b593c', '#514b35', '#7b6844', '#303b2a'][i % 4]} roughness={1} />
-                    </mesh>
-                    {i % 3 === 0 && <mesh position={[0, 0.08, 0]} rotation={[0, 0, (i % 2 ? 0.45 : -0.45)]}>
-                        <coneGeometry args={[0.055, 0.24, 3]} />
-                        <meshStandardMaterial color="#415337" roughness={1} />
-                    </mesh>}
-                </group>;
-            })}
-            {/* Abandoned campsite: cold fire pit and splintered logs */}
-            <group position={[3.8, 0, -1.8]}>
-                <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <circleGeometry args={[1.05, 16]} />
-                    <meshStandardMaterial color="#292721" roughness={1} />
-                </mesh>
-                {Array.from({ length: 7 }, (_, i) => <mesh key={i} position={[Math.cos(i * 0.9) * 0.62, 0.09, Math.sin(i * 0.9) * 0.62]} rotation={[0, i * 0.9, Math.PI / 2]} castShadow>
-                    <cylinderGeometry args={[0.075, 0.09, 0.9, 7]} />
-                    <meshStandardMaterial color={i % 2 ? '#51402e' : '#332b22'} roughness={1} />
-                </mesh>)}
-                <mesh position={[0, 0.17, 0]}>
-                    <icosahedronGeometry args={[0.2, 0]} />
-                    <meshStandardMaterial color="#171b19" roughness={1} />
-                </mesh>
-            </group>
+            <Forest />
+            <ForestGround />
+            <Campfire />
             {/* Fallen deadwood on the forest floor */}
             {[[-8, -2, 0.7], [7, -9, -0.45], [-11, 6, 0.3], [12, 2, -0.8]].map(([x, z, rot], i) => <group key={`log-${i}`} position={[x, 0.18, z]} rotation={[0, rot, Math.PI / 2]}>
                 <mesh castShadow receiveShadow><cylinderGeometry args={[0.18, 0.24, 2.1, 8]} /><meshStandardMaterial color="#3f3024" roughness={1} /></mesh>

@@ -669,14 +669,28 @@ button:focus-visible {
 }
 
 .game3d-canvas {
-  height: 520px;
+  height: min(70vh, 700px);
+  min-height: 520px;
   position: relative;
-  background: #c6d5bd;
+  overflow: hidden;
+  isolation: isolate;
+  background: #101820;
 }
 
 .game3d-canvas canvas {
   display: block;
   outline: none;
+}
+
+.game3d-canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 44%, transparent 32%, rgba(5, 10, 14, 0.24) 76%, rgba(3, 7, 11, 0.68) 100%),
+    linear-gradient(180deg, rgba(9, 17, 24, 0.18), transparent 35%, rgba(5, 9, 11, 0.14));
 }
 
 .game3d-controls {
@@ -696,7 +710,8 @@ button:focus-visible {
 
 @media (max-width: 600px) {
   .game3d-canvas {
-    height: 380px;
+    height: 58vh;
+    min-height: 420px;
   }
 
   .game3d-hud {

@@ -6,6 +6,8 @@ import WoodChips from "./WoodChips";
 import DayNightCycle from "./DayNightCycle";
 import ZombieSystem from "./ZombieSystem";
 
+const combatButton = { border: "1px solid rgba(148,163,184,.5)", color: "#f8fafc", borderRadius: 7, padding: "7px 10px", fontWeight: 900, fontSize: 10, letterSpacing: .5, cursor: "pointer" };
+
 const soundEffects = {
     swing: "/sounds/axe-swing.mp3",
     hit: "/sounds/tree-hit.mp3",
@@ -582,6 +584,12 @@ export default function Game3D() {
     const [stamina, setStamina] = useState(100);
     const [gameOver, setGameOver] = useState(false);
     const [isNight, setIsNight] = useState(false);
+    const [bloodMoon, setBloodMoon] = useState(false);
+    const [bossMode, setBossMode] = useState(false);
+    const [weapon, setWeapon] = useState("pistol");
+    const [ammo, setAmmo] = useState({ pistol: 12, rifle: 30 });
+    const [reserveAmmo, setReserveAmmo] = useState({ pistol: 48, rifle: 90 });
+    const [bossHealth, setBossHealth] = useState(0);
     const [apples, setApples] = useState(0);
     const [waterBottles, setWaterBottles] = useState(0);
     const [worldKey, setWorldKey] = useState(0);
@@ -710,6 +718,12 @@ export default function Game3D() {
         setHunger(100);
         setThirst(100);
         setStamina(100);
+        setBloodMoon(false);
+        setBossMode(false);
+        setWeapon("pistol");
+        setAmmo({ pistol: 12, rifle: 30 });
+        setReserveAmmo({ pistol: 48, rifle: 90 });
+        setBossHealth(0);
         setWood(0);
         setApples(0);
         setWaterBottles(0);
@@ -720,6 +734,35 @@ export default function Game3D() {
         setGameOver(false);
         setWorldKey((key) => key + 1);
     };
+
+    const shootGun = () => {
+        if (gameOver) return;
+        if (!isNight) { showMessage("🔦 No hostiles detected. Guns can hit zombies at night."); return; }
+        if (ammo[weapon] <= 0) { showMessage("🔴 Magazine empty! Press R or tap RELOAD."); return; }
+        setAmmo((current) => ({ ...current, [weapon]: current[weapon] - 1 }));
+        window.dispatchEvent(new CustomEvent("afterdeath:fire", { detail: { damage: weapon === "rifle" ? 85 : 55 } }));
+    };
+
+    const reloadGun = () => {
+        const capacity = weapon === "rifle" ? 30 : 12;
+        const needed = capacity - ammo[weapon];
+        if (needed <= 0) { showMessage("Magazine is already full."); return; }
+        if (reserveAmmo[weapon] <= 0) { showMessage("Out of reserve ammo!"); return; }
+        const loaded = Math.min(needed, reserveAmmo[weapon]);
+        setAmmo((current) => ({ ...current, [weapon]: current[weapon] + loaded }));
+        setReserveAmmo((current) => ({ ...current, [weapon]: current[weapon] - loaded }));
+        showMessage(`🔄 Reloaded ${loaded} rounds.`);
+    };
+
+    useEffect(() => {
+        const handleGunKeys = (event) => {
+            if (event.code === "KeyR") reloadGun();
+            if (event.code === "Digit1") setWeapon("pistol");
+            if (event.code === "Digit2") setWeapon("rifle");
+        };
+        window.addEventListener("keydown", handleGunKeys);
+        return () => window.removeEventListener("keydown", handleGunKeys);
+    });
 
     const toggleSound = () => {
         setChopSoundEnabled((enabled) => {
@@ -763,7 +806,7 @@ export default function Game3D() {
                         background: isNight ? "#f87171" : "#86efac",
                         boxShadow: isNight ? "0 0 12px #ef4444" : "0 0 8px #4ade80"
                     }} />
-                    {isNight ? "Threat level: HIGH" : "Threat level: LOW"}
+                    {bloodMoon ? "BLOOD MOON: EXTREME" : (isNight ? "Threat level: HIGH" : "Threat level: LOW")}
                 </div>
 
                 <div className="player-inventory">
@@ -774,8 +817,31 @@ export default function Game3D() {
                     <button type="button" onClick={toggleSound} className="sound-toggle">
                         {chopSoundEnabled ? "🔊 Sound On" : "🔇 Sound Off"}
                     </button>
+                    <button type="button" onClick={() => {
+                        setBloodMoon((active) => !active);
+                        showMessage(bloodMoon ? "🩸 Blood Moon signal cancelled." : "🩸 BLOOD MOON ACTIVATED. Prepare for the horde!");
+                    }} style={{
+                        border: `1px solid ${bloodMoon ? "#fb7185" : "#991b1b"}`,
+                        background: bloodMoon ? "#7f1d1d" : "#450a0a",
+                        color: "#fff1f2", borderRadius: 7, padding: "7px 10px",
+                        fontWeight: 900, fontSize: 10, letterSpacing: .7, cursor: "pointer"
+                    }}>{bloodMoon ? "🩸 BLOOD MOON ON" : "🩸 TRIGGER BLOOD MOON"}</button>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7, alignItems: "center", marginTop: 9 }}>
+                    <button type="button" onClick={() => setWeapon("pistol")} style={{ ...combatButton, background: weapon === "pistol" ? "#1d4ed8" : "#172033" }}>🔫 PISTOL [1] · {ammo.pistol}/{reserveAmmo.pistol}</button>
+                    <button type="button" onClick={() => setWeapon("rifle")} style={{ ...combatButton, background: weapon === "rifle" ? "#1d4ed8" : "#172033" }}>⚡ RIFLE [2] · {ammo.rifle}/{reserveAmmo.rifle}</button>
+                    <button type="button" onClick={shootGun} style={{ ...combatButton, background: "#991b1b", borderColor: "#f87171" }}>FIRE 🔥</button>
+                    <button type="button" onClick={reloadGun} style={combatButton}>RELOAD [R]</button>
+                    <button type="button" onClick={() => { setBossMode((active) => !active); showMessage(bossMode ? "Boss signal cancelled." : "☠ BOSS SIGNAL ARMED — survive until nightfall!"); }} style={{ ...combatButton, background: bossMode ? "#7f1d1d" : "#3f0b19", borderColor: "#fb7185" }}>{bossMode ? "☠ BOSS ARMED" : "☠ SUMMON BOSS"}</button>
                 </div>
             </div>
+
+            {bossHealth > 0 && !gameOver && (
+                <div style={{ position: "absolute", top: 205, left: "50%", transform: "translateX(-50%)", zIndex: 8, width: "min(420px, 72vw)", color: "#fff", textAlign: "center", pointerEvents: "none", textShadow: "0 2px 8px #000" }}>
+                    <div style={{ fontSize: 12, fontWeight: 1000, letterSpacing: 4, marginBottom: 6 }}>☠ THE ABOMINATION · {Math.ceil(bossHealth)} / 1200 HP</div>
+                    <div style={{ height: 12, border: "1px solid #fb7185", background: "#1f0710", borderRadius: 99, overflow: "hidden", boxShadow: "0 0 18px #be123c" }}><div style={{ height: "100%", width: `${Math.max(0, bossHealth / 1200 * 100)}%`, background: "linear-gradient(90deg,#7f1d1d,#fb7185,#fff1f2)", transition: "width 180ms" }} /></div>
+                </div>
+            )}
 
             <div style={{
                 position: "absolute", top: 86, left: 18, zIndex: 5,
@@ -819,6 +885,26 @@ export default function Game3D() {
                 </div>
             </div>
 
+            {bloodMoon && !gameOver && (
+                <div style={{
+                    position: "absolute", inset: 0, zIndex: 4, pointerEvents: "none",
+                    background: "radial-gradient(ellipse at 50% 8%, rgba(190,18,60,.20), transparent 58%)",
+                    boxShadow: "inset 0 0 100px rgba(127,29,29,.28)"
+                }} />
+            )}
+
+            {bloodMoon && !gameOver && (
+                <div style={{
+                    position: "absolute", top: 150, left: "50%", transform: "translateX(-50%)",
+                    zIndex: 7, textAlign: "center", color: "#ffe4e6", pointerEvents: "none",
+                    textShadow: "0 0 18px #e11d48", fontWeight: 1000, letterSpacing: 4,
+                    fontSize: 19, animation: "afterDeathPulse 1.1s ease-in-out infinite"
+                }}>
+                    🩸 BLOOD MOON — NO ONE IS COMING TO SAVE YOU 🩸
+                    <div style={{ fontSize: 10, letterSpacing: 2, marginTop: 8 }}>8 HOSTILES · +57% SPEED · +50% DAMAGE</div>
+                </div>
+            )}
+
             {isNight && !gameOver && (
                 <div style={{
                     position: "absolute", top: 86, right: 18, zIndex: 6,
@@ -835,7 +921,7 @@ export default function Game3D() {
                         HOSTILES ACTIVE
                     </strong>
                     <div style={{ fontSize: 12, lineHeight: 1.5, opacity: .9 }}>
-                        Keep moving. Watch your health, and use your axe only when a hostile is within range.
+                        Use guns for distant targets. Reload with R; save ammo for the boss. Axe attacks work with F up close.
                     </div>
                 </div>
             )}
@@ -867,13 +953,16 @@ export default function Game3D() {
                     camera={{ position: [0, 5, 7], fov: 55 }}
                     dpr={[1, 1.5]}
                 >
-                    <color attach="background" args={["#c6d5bd"]} />
-                    <fog attach="fog" args={["#c6d5bd", 25, 55]} />
+                    <color attach="background" args={[bloodMoon ? "#35101b" : "#c6d5bd"]} />
+                    <fog attach="fog" args={[bloodMoon ? "#35101b" : "#c6d5bd", bloodMoon ? 13 : 25, bloodMoon ? 38 : 55]} />
 
                     <DayNightCycle onNightChange={setIsNight} />
                     <ZombieSystem
                         playerPosition={position}
                         isNight={isNight}
+                        bloodMoon={bloodMoon}
+                        bossMode={bossMode}
+                        onBossHealthChange={setBossHealth}
                         hasAxe={hasAxe}
                         disabled={gameOver}
                         onPlayerDamage={(amount) => {
