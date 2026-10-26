@@ -48,19 +48,19 @@ function WorldTree({ fallProgress = 0, hitCount = 0 }) {
                 {/* Trunk */}
                 <mesh position={[0, 0.65, 0]} castShadow>
                     <cylinderGeometry args={[0.13, 0.2, 1.3, 8]} />
-                    <meshStandardMaterial color="#755039" roughness={1} />
+                    <meshStandardMaterial color="#3f3025" roughness={1} />
                 </mesh>
 
                 {/* Lower leaves */}
                 <mesh position={[0, 1.6, 0]} castShadow>
                     <coneGeometry args={[0.85, 1.8, 8]} />
-                    <meshStandardMaterial color="#4e8050" roughness={1} />
+                    <meshStandardMaterial color="#29452f" roughness={1} />
                 </mesh>
 
                 {/* Upper leaves */}
                 <mesh position={[0, 2.15, 0]} castShadow>
                     <coneGeometry args={[0.58, 1.3, 8]} />
-                    <meshStandardMaterial color="#6a9c5b" roughness={1} />
+                    <meshStandardMaterial color="#3b5a3a" roughness={1} />
                 </mesh>
             </group>
         </group>
@@ -433,10 +433,51 @@ function Environment({
         <>
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]} receiveShadow>
                 <planeGeometry args={[100, 100]} />
-                <meshStandardMaterial color="#527d42" />
+                <meshStandardMaterial color="#303d2c" roughness={1} />
             </mesh>
 
-            <gridHelper args={[100, 100, "#76985a", "#64874d"]} />
+            {/* Muddy trail through the forest */}
+            <mesh position={[0, -0.025, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+                <shapeGeometry args={[(() => { const s = new THREE.Shape(); s.moveTo(-2.1, -50); s.quadraticCurveTo(-0.7, -20, -1.1, -5); s.quadraticCurveTo(-2.2, 12, 0.6, 26); s.quadraticCurveTo(1.2, 38, 0.2, 50); s.lineTo(2.4, 50); s.quadraticCurveTo(3.1, 34, 2.1, 24); s.quadraticCurveTo(-0.1, 10, 1.2, -5); s.quadraticCurveTo(1.6, -25, 2.1, -50); s.closePath(); return s; })()]} />
+                <meshStandardMaterial color="#4b4030" roughness={1} />
+            </mesh>
+            {/* Forest floor detail: stones, leaf litter, grass clumps and broken branches */}
+            {Array.from({ length: 115 }, (_, i) => {
+                const x = Math.sin(i * 91.7) * 22;
+                const z = Math.cos(i * 37.3) * 22;
+                const size = 0.04 + (i % 5) * 0.018;
+                const nearTrail = Math.abs(x - Math.sin(z * 0.08) * 1.2) < 3;
+                return <group key={`litter-${i}`} position={[x, -0.015, z]} rotation={[0, i * 1.7, 0]}>
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} scale={[1.6, 0.55, 1]}>
+                        <circleGeometry args={[size * (nearTrail ? 1.8 : 1), 5]} />
+                        <meshStandardMaterial color={['#6b593c', '#514b35', '#7b6844', '#303b2a'][i % 4]} roughness={1} />
+                    </mesh>
+                    {i % 3 === 0 && <mesh position={[0, 0.08, 0]} rotation={[0, 0, (i % 2 ? 0.45 : -0.45)]}>
+                        <coneGeometry args={[0.055, 0.24, 3]} />
+                        <meshStandardMaterial color="#415337" roughness={1} />
+                    </mesh>}
+                </group>;
+            })}
+            {/* Abandoned campsite: cold fire pit and splintered logs */}
+            <group position={[3.8, 0, -1.8]}>
+                <mesh position={[0, 0.025, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                    <circleGeometry args={[1.05, 16]} />
+                    <meshStandardMaterial color="#292721" roughness={1} />
+                </mesh>
+                {Array.from({ length: 7 }, (_, i) => <mesh key={i} position={[Math.cos(i * 0.9) * 0.62, 0.09, Math.sin(i * 0.9) * 0.62]} rotation={[0, i * 0.9, Math.PI / 2]} castShadow>
+                    <cylinderGeometry args={[0.075, 0.09, 0.9, 7]} />
+                    <meshStandardMaterial color={i % 2 ? '#51402e' : '#332b22'} roughness={1} />
+                </mesh>)}
+                <mesh position={[0, 0.17, 0]}>
+                    <icosahedronGeometry args={[0.2, 0]} />
+                    <meshStandardMaterial color="#171b19" roughness={1} />
+                </mesh>
+            </group>
+            {/* Fallen deadwood on the forest floor */}
+            {[[-8, -2, 0.7], [7, -9, -0.45], [-11, 6, 0.3], [12, 2, -0.8]].map(([x, z, rot], i) => <group key={`log-${i}`} position={[x, 0.18, z]} rotation={[0, rot, Math.PI / 2]}>
+                <mesh castShadow receiveShadow><cylinderGeometry args={[0.18, 0.24, 2.1, 8]} /><meshStandardMaterial color="#3f3024" roughness={1} /></mesh>
+                <mesh position={[0, 1.06, 0]}><cylinderGeometry args={[0.15, 0.18, 0.025, 8]} /><meshStandardMaterial color="#b29a70" roughness={1} /></mesh>
+            </group>)}
 
             {supplies.map((supply) => {
                 const isNearby = nearbySupplyId === supply.id;
