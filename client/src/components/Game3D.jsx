@@ -97,19 +97,21 @@ function Rock({ position, scale = 1 }) {
     );
 }
 
-function Player({ onPositionChange, isChopping, onAxeSwing, onAxeHit, disabled }) {
+function Player({ onPositionChange, onStaminaChange, isChopping, onAxeSwing, onAxeHit, disabled }) {
     const player = useRef();
     const keys = useRef({});
     const direction = useRef(new THREE.Vector3());
     const cameraTarget = useRef(new THREE.Vector3());
     const visual = useRef();
     const walkTime = useRef(0);
+    const stamina = useRef(100);
+    const staminaReportTime = useRef(0);
     const { camera } = useThree();
 
     useEffect(() => {
         const allowedKeys = [
             "w", "a", "s", "d",
-            "arrowup", "arrowdown", "arrowleft", "arrowright",
+            "arrowup", "arrowdown", "arrowleft", "arrowright", "shift",
         ];
 
         const handleKeyDown = (event) => {
@@ -152,12 +154,23 @@ function Player({ onPositionChange, isChopping, onAxeSwing, onAxeHit, disabled }
 
         direction.current.set(x, 0, z);
         const isMoving = direction.current.lengthSq() > 0 && !isChopping && !disabled;
+        const sprinting = isMoving && Boolean(input.shift) && stamina.current > 0;
+        if (sprinting) {
+            stamina.current = Math.max(0, stamina.current - 26 * delta);
+        } else {
+            stamina.current = Math.min(100, stamina.current + 14 * delta);
+        }
+        staminaReportTime.current += delta;
+        if (staminaReportTime.current >= 0.12) {
+            staminaReportTime.current = 0;
+            onStaminaChange?.(Math.round(stamina.current));
+        }
 
         if (isMoving) {
             direction.current.normalize();
             player.current.position.addScaledVector(
                 direction.current,
-                5 * Math.min(delta, 0.05)
+                (sprinting ? 8.2 : 5) * Math.min(delta, 0.05)
             );
             player.current.rotation.y = Math.atan2(
                 -direction.current.x,
@@ -217,6 +230,7 @@ function Player({ onPositionChange, isChopping, onAxeSwing, onAxeHit, disabled }
 
 function Environment({
     onPositionChange,
+    onStaminaChange,
     onWoodCollected,
     onMessage,
     hasAxe,
@@ -545,6 +559,7 @@ function Environment({
 
             <Player
                 onPositionChange={updatePlayerPosition}
+                onStaminaChange={onStaminaChange}
                 isChopping={isChopping}
                 onAxeSwing={onAxeSwing}
                 onAxeHit={handleAxeHit}
@@ -564,6 +579,7 @@ export default function Game3D() {
     const [health, setHealth] = useState(100);
     const [hunger, setHunger] = useState(100);
     const [thirst, setThirst] = useState(100);
+    const [stamina, setStamina] = useState(100);
     const [gameOver, setGameOver] = useState(false);
     const [isNight, setIsNight] = useState(false);
     const [apples, setApples] = useState(0);
@@ -693,6 +709,7 @@ export default function Game3D() {
         setHealth(100);
         setHunger(100);
         setThirst(100);
+        setStamina(100);
         setWood(0);
         setApples(0);
         setWaterBottles(0);
@@ -775,6 +792,7 @@ export default function Game3D() {
                     { label: "❤️ Health", value: health, color: "#ef4444" },
                     { label: "🍖 Hunger", value: hunger, color: "#f59e0b" },
                     { label: "💧 Thirst", value: thirst, color: "#38bdf8" },
+                    { label: "⚡ Stamina", value: stamina, color: "#a3e635" },
                 ].map((meter) => (
                     <div key={meter.label} style={{ marginBottom: 9 }}>
                         <div style={{
@@ -797,7 +815,7 @@ export default function Game3D() {
                     </div>
                 ))}
                 <div style={{ fontSize: 10, opacity: 0.7, marginTop: 2 }}>
-                    Hunger & thirst decrease over time
+                    Hunger & thirst decrease over time · Hold SHIFT to sprint
                 </div>
             </div>
 
@@ -871,6 +889,7 @@ export default function Game3D() {
 
                     <Environment
                         onPositionChange={setPosition}
+                        onStaminaChange={setStamina}
                         onWoodCollected={collectWood}
                         onMessage={showMessage}
                         hasAxe={hasAxe}
