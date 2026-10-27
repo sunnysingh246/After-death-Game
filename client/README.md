@@ -24,32 +24,32 @@ Start with basic resources, construct essential buildings, and develop your sett
 
 ### Currently Implemented
 
-* 🎨 Dark, post-apocalyptic user interface
-* 🏠 Civilization management dashboard
-* 🌲 Resource tracking for Wood, Metal, Food, and Energy
-* 🏗️ Building construction system
-* 💰 Resource costs for constructing buildings
-* 🗺️ Settlement map with building markers
-* 🌾 Automatic food production from farms
-* ⚡ Automatic energy production from power plants
-* 💾 Local browser save system using localStorage
-* 🔄 Reset game functionality
-* 📱 Responsive layout for different screen sizes
+- 🎨 Dark, post-apocalyptic user interface
+- 🏠 Civilization management dashboard
+- 🌲 Resource tracking for Wood, Metal, Food, and Energy
+- 🏗️ Building construction system
+- 💰 Resource costs for constructing buildings
+- 🗺️ Settlement map with building markers
+- 🌾 Automatic food production from farms
+- ⚡ Automatic energy production from power plants
+- 💾 Local browser save system using localStorage
+- 🔄 Reset game functionality
+- 📱 Responsive layout for different screen sizes
 
 ### Planned Features
 
-* 🧭 Exploration of abandoned territories
-* 📦 Random loot and resource discovery
-* 👥 Population and survivor management
-* 🔬 Technology research and upgrades
-* 🏭 Advanced buildings and resource production
-* 🔐 User authentication
-* ☁️ Cloud-based game saves using MongoDB
-* 🌐 Real-time multiplayer using Socket.IO
-* 🤝 Player trading and alliances
-* 🏆 Leaderboards and achievements
+- 🧭 Exploration of abandoned territories
+- 📦 Random loot and resource discovery
+- 👥 Population and survivor management
+- 🔬 Technology research and upgrades
+- 🏭 Advanced buildings and resource production
+- 🔐 User authentication
+- ☁️ Cloud-based game saves using MongoDB
+- 🌐 Real-time multiplayer using Socket.IO
+- 🤝 Player trading and alliances
+- 🏆 Leaderboards and achievements
 
-*Planned features are under development and are not yet available in the current prototype.*
+_Planned features are under development and are not yet available in the current prototype._
 
 ---
 
@@ -57,24 +57,24 @@ Start with basic resources, construct essential buildings, and develop your sett
 
 ### Frontend
 
-* React
-* Vite
-* Tailwind CSS
-* Zustand
-* React Router
-* Lucide React
-* Framer Motion
+- React
+- Vite
+- Tailwind CSS
+- Zustand
+- React Router
+- Lucide React
+- Framer Motion
 
 ### Backend
 
-* Node.js
-* Express.js
-* Socket.IO
+- Node.js
+- Express.js
+- Socket.IO
 
 ### Database
 
-* MongoDB
-* Mongoose
+- MongoDB
+- Mongoose
 
 ---
 
@@ -123,7 +123,7 @@ AFTER-DEATH/
 └── README.md
 ```
 
-*The structure above describes the intended project layout. Some directories may remain empty until their corresponding features are implemented.*
+_The structure above describes the intended project layout. Some directories may remain empty until their corresponding features are implemented._
 
 ---
 
@@ -133,9 +133,9 @@ AFTER-DEATH/
 
 Install the following:
 
-* Node.js and npm
-* Git
-* VS Code or another code editor
+- Node.js and npm
+- Git
+- VS Code or another code editor
 
 MongoDB Atlas credentials will be needed when database integration is enabled.
 
@@ -214,8 +214,8 @@ Never commit your `.env` file or expose database credentials publicly.
 
 Once implemented and active:
 
-* Each Hydroponic Farm produces 10 Food every 10 seconds.
-* Each Power Plant produces 5 Energy every 10 seconds.
+- Each Hydroponic Farm produces 10 Food every 10 seconds.
+- Each Power Plant produces 5 Energy every 10 seconds.
 
 Resource production currently operates while the game screen is open.
 
@@ -223,22 +223,22 @@ Resource production currently operates while the game screen is open.
 
 ## 🗺️ Development Roadmap
 
-* [x] Initial React and Vite setup
-* [x] Game dashboard and UI
-* [x] Resource management
-* [x] Building construction
-* [x] Basic resource production
-* [x] Local game persistence
-* [ ] Territory exploration
-* [ ] Random events and loot
-* [ ] Population management
-* [ ] Technology research
-* [ ] Backend game APIs
-* [ ] MongoDB game persistence
-* [ ] Authentication and player profiles
-* [ ] Multiplayer gameplay
-* [ ] Trading and alliances
-* [ ] Deployment and public release
+- [x] Initial React and Vite setup
+- [x] Game dashboard and UI
+- [x] Resource management
+- [x] Building construction
+- [x] Basic resource production
+- [x] Local game persistence
+- [ ] Territory exploration
+- [ ] Random events and loot
+- [ ] Population management
+- [ ] Technology research
+- [ ] Backend game APIs
+- [ ] MongoDB game persistence
+- [ ] Authentication and player profiles
+- [ ] Multiplayer gameplay
+- [ ] Trading and alliances
+- [ ] Deployment and public release
 
 ---
 
@@ -246,12 +246,12 @@ Resource production currently operates while the game screen is open.
 
 AFTER DEATH aims to evolve into a persistent multiplayer strategy game where players can:
 
-* Build and expand civilizations.
-* Explore dangerous territories.
-* Discover rare resources and technologies.
-* Trade with other players.
-* Form alliances and compete for global rankings.
-* Customize their settlements and civilizations.
+- Build and expand civilizations.
+- Explore dangerous territories.
+- Discover rare resources and technologies.
+- Trade with other players.
+- Form alliances and compete for global rankings.
+- Customize their settlements and civilizations.
 
 Future monetization may include cosmetic items, optional premium customization, and expansion content.
 

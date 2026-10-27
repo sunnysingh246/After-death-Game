@@ -67,7 +67,7 @@ button:focus-visible {
 .world-stats span,
 .map-status,
 .map-coordinates,
-.section-heading>span,
+.section-heading > span,
 .game-footer {
   font-size: 11px;
   letter-spacing: 1.6px;
@@ -165,7 +165,9 @@ button:focus-visible {
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 1px;
-  transition: background-color 180ms ease, transform 180ms ease;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
 }
 
 .primary-button:hover {
@@ -194,7 +196,10 @@ button:focus-visible {
   font-weight: 800;
   letter-spacing: 1px;
   text-decoration: none;
-  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
 }
 
 .world-button:hover {
@@ -255,7 +260,6 @@ button:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   .hero-content,
   .hero-footer {
     animation: none;
@@ -291,7 +295,7 @@ button:focus-visible {
   font-size: clamp(28px, 5vw, 42px);
 }
 
-.welcome-row>div>p:last-child {
+.welcome-row > div > p:last-child {
   color: #9ca99e;
   line-height: 1.7;
 }
@@ -356,7 +360,10 @@ button:focus-visible {
     linear-gradient(#a8c39a12 1px, transparent 1px),
     linear-gradient(90deg, #a8c39a12 1px, transparent 1px),
     radial-gradient(ellipse at 50% 50%, #53674b 0%, #263728 58%, #172219 100%);
-  background-size: 40px 40px, 40px 40px, auto;
+  background-size:
+    40px 40px,
+    40px 40px,
+    auto;
 }
 
 .map-decoration {
@@ -474,7 +481,7 @@ button:focus-visible {
   font-size: 17px;
 }
 
-.building-card>p,
+.building-card > p,
 .research-panel p:last-child {
   min-height: 42px;
   color: #9ca99e;
@@ -521,7 +528,7 @@ button:focus-visible {
   background: #171e19;
 }
 
-.research-panel>div:nth-child(2) {
+.research-panel > div:nth-child(2) {
   flex: 1;
 }
 
@@ -533,7 +540,7 @@ button:focus-visible {
   margin-bottom: 0;
 }
 
-.research-panel>svg {
+.research-panel > svg {
   color: #c0d99a;
 }
 
@@ -632,7 +639,6 @@ button:focus-visible {
   }
 }
 
-
 .game3d {
   width: 100%;
   min-width: 0;
@@ -653,7 +659,7 @@ button:focus-visible {
   border-bottom: 1px solid #3a463d;
 }
 
-.game3d-hud>div:first-child {
+.game3d-hud > div:first-child {
   display: grid;
   gap: 5px;
 }
@@ -689,7 +695,12 @@ button:focus-visible {
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 50% 44%, transparent 32%, rgba(5, 10, 14, 0.24) 76%, rgba(3, 7, 11, 0.68) 100%),
+    radial-gradient(
+      ellipse at 50% 44%,
+      transparent 32%,
+      rgba(5, 10, 14, 0.24) 76%,
+      rgba(3, 7, 11, 0.68) 100%
+    ),
     linear-gradient(180deg, rgba(9, 17, 24, 0.18), transparent 35%, rgba(5, 9, 11, 0.14));
 }
 

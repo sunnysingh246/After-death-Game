@@ -56,9 +56,7 @@ export default function GameMap() {
           );
         })}
 
-        <div className="map-coordinates">
-          X: 073 · Y: 019
-        </div>
+        <div className="map-coordinates">X: 073 · Y: 019</div>
       </div>
     </section>
   );

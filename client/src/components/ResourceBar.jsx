@@ -1,9 +1,4 @@
-import {
-  Trees,
-  Hammer,
-  Wheat,
-  Zap,
-} from "lucide-react";
+import { Trees, Hammer, Wheat, Zap } from "lucide-react";
 
 import { useGameStore } from "../store/gameStore";
 

@@ -5,15 +5,18 @@ import Game from "./pages/Game";
 import { useGameStore } from "./store/gameStore";
 
 function GameRouter() {
-    const gameStarted = useGameStore((state) => state.gameStarted);
-    return gameStarted ? <Game /> : <Home />;
+  const gameStarted = useGameStore((state) => state.gameStarted);
+  return gameStarted ? <Game /> : <Home />;
 }
 export default function App() {
-    return (
-        <BrowserRouter>
-            <Routes> <Route path="/" element={<GameRouter />} />
-                <Route path="/world" element={<Game3D />} />
-                <Route path="*" element={<GameRouter />} />
-            </Routes>
-        </BrowserRouter>);
+  return (
+    <BrowserRouter>
+      <Routes>
+        {" "}
+        <Route path="/" element={<GameRouter />} />
+        <Route path="/world" element={<Game3D />} />
+        <Route path="*" element={<GameRouter />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
