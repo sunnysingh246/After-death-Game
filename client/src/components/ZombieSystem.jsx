@@ -8,11 +8,17 @@ const BLOOD_MOON_SPAWNS = [...NIGHT_SPAWNS, [-16, 0, 1], [15, 0, 3], [3, 0, -15]
 function ZombieModel({ zombie, registerRef, bloodMoon = false }) {
   const groupRef = useRef();
   const boss = zombie.type === "boss";
-  useEffect(() => { registerRef(zombie.id, groupRef.current); return () => registerRef(zombie.id, null); }, [zombie.id, registerRef]);
+
+  useEffect(() => {
+    registerRef(zombie.id, groupRef.current);
+    return () => registerRef(zombie.id, null);
+  }, [zombie.id, registerRef]);
+
   const skin = boss ? "#28121c" : "#78916a";
   const cloth = boss ? "#641126" : "#526b4c";
   return (
     <group ref={groupRef} position={zombie.position} scale={boss ? 2.25 : 1}>
+      
       <mesh position={[0, 1.65, 0]} castShadow><boxGeometry args={boss ? [0.62, 0.58, 0.52] : [0.48, 0.48, 0.42]} /><meshStandardMaterial color={skin} roughness={1} /></mesh>
       <mesh position={[-0.12, 1.7, -0.215]}><sphereGeometry args={[boss ? 0.075 : 0.045, 8, 8]} /><meshBasicMaterial color={boss || bloodMoon ? "#ff001e" : "#ff3030"} /></mesh>
       <mesh position={[0.12, 1.7, -0.215]}><sphereGeometry args={[boss ? 0.075 : 0.045, 8, 8]} /><meshBasicMaterial color={boss || bloodMoon ? "#ff001e" : "#ff3030"} /></mesh>
@@ -36,20 +42,22 @@ export default function ZombieSystem({ playerPosition, isNight, bloodMoon = fals
   const zombiesRef = useRef(zombies);
 
   useEffect(() => {
-     zombiesRef.current = zombies; onBossHealthChange?.(zombies.find(z => z.type === "boss")?.health ?? 0);
-     }, [zombies, onBossHealthChange]);
+    zombiesRef.current = zombies; onBossHealthChange?.(zombies.find(z => z.type === "boss")?.health ?? 0);
+  }, [zombies, onBossHealthChange]);
 
   useEffect(() => {
 
     if (isNight && (!lastNightState.current || lastBloodMoon.current !== bloodMoon || lastBossMode.current !== bossMode)) {
 
       const spawnPoints = bloodMoon ? BLOOD_MOON_SPAWNS : NIGHT_SPAWNS;
-      const next = spawnPoints.map((position, index) => ({ id: `${bloodMoon ? "blood" : "night"}-${Date.now()}-${index}`, position: 
+      const next = spawnPoints.map((position, index) => ({
+        id: `${bloodMoon ? "blood" : "night"}-${Date.now()}-${index}`, position:
 
-      [...position], health: bloodMoon ? 160 : 100, type: "normal" }));
-      if (bossMode) 
+          [...position], health: bloodMoon ? 160 : 100, type: "normal"
+      }));
+      if (bossMode)
         next.push({ id: `boss-${Date.now()}`, position: [0, 0, -18], health: 1200, type: "boss" });
-      
+
       setZombies(next);
       onMessage?.(bossMode ? "☠ THE ABOMINATION HAS AWAKENED. Aim carefully!" : bloodMoon ? "🩸 BLOOD MOON! Eight hostiles detected!" : "🌙 Night has fallen! Zombies are approaching...");
     } else if (!isNight && lastNightState.current) {
@@ -109,16 +117,43 @@ export default function ZombieSystem({ playerPosition, isNight, bloodMoon = fals
       if (event.code !== "KeyF" || event.repeat || disabled || !isNight || !hasAxe) return;
       const px = playerPosition?.x ?? 0, pz = playerPosition?.z ?? 0;
       let target = null, nearestDistance = 2.6;
-      for (const z of zombiesRef.current) { const o = zombieRefs.current[z.id]; if (!o) continue; const d = Math.hypot(o.position.x - px, o.position.z - pz); if (d < nearestDistance) { target = z; nearestDistance = d; } }
+
+      for (const z of zombiesRef.current) {
+        const o = zombieRefs.current[z.id]; if (!o) continue;
+        const d = Math.hypot(o.position.x - px, o.position.z - pz);
+
+        if (d < nearestDistance) {
+          target = z; nearestDistance = d;
+        }
+      }
+
       if (!target) return;
       const nextHealth = target.health - (target.type === "boss" ? 45 : 100);
-      if (nextHealth <= 0) { setZombies(current => current.filter(z => z.id !== target.id)); delete zombieRefs.current[target.id]; onMessage?.(target.type === "boss" ? "🏆 Boss defeated with your axe!" : "🪓 Zombie defeated!"); }
-      else { setZombies(current => current.map(z => z.id === target.id ? { ...z, health: nextHealth } : z)); onMessage?.("🪓 Axe hit! Keep fighting!"); }
+
+      if (nextHealth <= 0) {
+        setZombies(current => current.filter(z => z.id !== target.id)); delete zombieRefs.current[target.id]; onMessage?.(target.type === "boss" ? "🏆 Boss defeated with your axe!" : "🪓 Zombie defeated!");
+
+      }
+      else {
+        setZombies(current => current.map(z => z.id === target.id ? { ...z, health: nextHealth } : z));
+        onMessage?.("🪓 Axe hit! Keep fighting!");
+      }
     };
-    window.addEventListener("afterdeath:fire", fire); window.addEventListener("keydown", axe);
-    return () => { window.removeEventListener("afterdeath:fire", fire); window.removeEventListener("keydown", axe); };
+    window.addEventListener("afterdeath:fire", fire);
+    window.addEventListener("keydown", axe);
+
+    return () => {
+      window.removeEventListener("afterdeath:fire", fire); window.removeEventListener("keydown", axe);
+    };
   }, [disabled, hasAxe, isNight, onMessage, playerPosition]);
 
-  if (!isNight || disabled) return null;
-  return <>{zombies.map(zombie => <ZombieModel key={zombie.id} zombie={zombie} registerRef={registerRef} bloodMoon={bloodMoon} />)}</>;
+  if (!isNight || disabled)
+    return null;
+
+  return
+  <>{
+    zombies.map(zombie =>
+      <ZombieModel key={zombie.id} zombie={zombie} registerRef={registerRef} bloodMoon={bloodMoon} />)
+  }
+  </>;
 }
