@@ -459,7 +459,6 @@ function Environment({
       setChoppingTreeId(targetTreeId);
       setChopProgress(0);
       setIsChopping(true);
-      onMessage?.("🪓 Chopping tree... Press E again to cancel.");
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -1160,37 +1159,6 @@ export default function Game3D() {
         </div>
       )}
 
-      <div
-        style={{
-          position: "absolute",
-          left: 18,
-          bottom: 22,
-          zIndex: 5,
-          width: 230,
-          padding: "12px 14px",
-          borderRadius: 12,
-          color: "#e2e8f0",
-          background: "rgba(2,6,23,.86)",
-          border: "1px solid rgba(148,163,184,.25)",
-          fontFamily: "inherit",
-          pointerEvents: "none",
-        }}
-      >
-        <div style={{ fontSize: 10, letterSpacing: 1.5, color: "#94a3b8", marginBottom: 8 }}>
-          CURRENT OBJECTIVE
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 4 }}>
-          {hasAxe ? "SURVIVE THE NIGHT" : "CRAFT A WEAPON"}
-        </div>
-        <div style={{ fontSize: 11, lineHeight: 1.45, color: "#cbd5e1" }}>
-          {hasAxe
-            ? isNight
-              ? "Hostiles are active. Keep distance and strike carefully."
-              : "Gather supplies before darkness returns."
-            : `Collect ${Math.max(0, 10 - wood)} more wood to craft your first axe.`}
-        </div>
-      </div>
-
       <div className="game3d-canvas">
         <Canvas key={worldKey} shadows camera={{ position: [0, 5, 7], fov: 55 }} dpr={[1, 1.5]}>
           <color attach="background" args={[bloodMoon ? "#35101b" : "#c6d5bd"]} />
@@ -1248,18 +1216,25 @@ export default function Game3D() {
       {message && <div className="game3d-message">{message}</div>}
 
       {isChopping && (
-        <div className="chop-progress-panel">
-          <div className="chop-progress-label">
-            <span>🪓 CHOPPING TREE</span>
-            <span>Working...</span>
-          </div>
-          <div className="chop-progress-track">
-            <div className="chop-progress-fill" />
-          </div>
+        <div className="chop-status" role="status" aria-live="polite">
+          🪓 Chopping tree — press E again to cancel.
         </div>
       )}
 
       <div className="game3d-controls">
+        <div className="objective-panel">
+          <div className="objective-panel-label">CURRENT OBJECTIVE</div>
+          <div className="objective-panel-title">
+            {hasAxe ? "SURVIVE THE NIGHT" : "CRAFT A WEAPON"}
+          </div>
+          <div className="objective-panel-description">
+            {hasAxe
+              ? isNight
+                ? "Hostiles are active. Keep distance and strike carefully."
+                : "Gather supplies before darkness returns."
+              : `Collect ${Math.max(0, 10 - wood)} more wood to craft your first axe.`}
+          </div>
+        </div>
         <div className="crafting-panel">
           <h3>🎒 Survival Inventory</h3>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>

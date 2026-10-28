@@ -313,14 +313,12 @@ body {
   gap: 7px !important;
   max-height: 29dvh !important;
   overflow-y: auto !important;
-  padding: 10px 11px !important;
-  border: 1px solid rgba(190, 220, 160, 0.18) !important;
-  border-radius: 18px !important;
-  background: linear-gradient(135deg, rgba(5, 13, 10, 0.46), rgba(10, 18, 14, 0.34)) !important;
-  backdrop-filter: blur(12px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 12px 22px rgba(0, 0, 0, 0.18);
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  backdrop-filter: none;
+  box-shadow: none;
   scrollbar-width: thin;
 }
 
@@ -380,58 +378,59 @@ body {
   font-size: 9px !important;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 5px 7px;
-  border-radius: 8px;
-  background: rgba(16, 24, 20, 0.18);
-  border: 1px solid rgba(148, 163, 184, 0.08);
+  padding: 0;
+  border: 0;
+  background: transparent;
   white-space: nowrap;
 }
 
-.chop-progress-panel {
-  position: absolute !important;
-  top: 31% !important;
-  left: 50% !important;
-  transform: translateX(-50%);
-  width: min(320px, 80vw) !important;
-  z-index: 14 !important;
-  padding: 10px 12px !important;
-  background: rgba(9, 16, 12, 0.88);
-  border: 1px solid rgba(190, 220, 160, 0.22);
+.objective-panel {
+  flex: 1 1 230px;
+  min-width: min(100%, 220px);
+  max-width: 340px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
   border-radius: 12px;
-  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.22);
+  background: rgba(2, 6, 23, 0.82);
+  color: #e2e8f0;
+  pointer-events: none;
 }
 
-.chop-progress-label {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 10px !important;
+.objective-panel-label {
   margin-bottom: 7px;
+  color: #94a3b8;
+  font-size: 10px;
+  letter-spacing: 1.5px;
 }
 
-.chop-progress-track {
-  height: 5px !important;
-  border-radius: 99px;
-  overflow: hidden;
-  background: #263328;
+.objective-panel-title {
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 800;
 }
 
-.chop-progress-fill {
-  height: 100%;
-  width: 100%;
-  transform-origin: left;
-  background: #c5e59a;
-  animation: chopFill 3.4s linear forwards;
+.objective-panel-description {
+  color: #cbd5e1;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
-@keyframes chopFill {
-  from {
-    transform: scaleX(0);
-  }
-
-  to {
-    transform: scaleX(1);
-  }
+.chop-status {
+  position: absolute !important;
+  right: max(14px, env(safe-area-inset-right)) !important;
+  bottom: calc(29dvh + 28px + env(safe-area-inset-bottom)) !important;
+  z-index: 14 !important;
+  max-width: min(320px, calc(100vw - 28px)) !important;
+  padding: 9px 12px !important;
+  border: 1px solid rgba(190, 220, 160, 0.28);
+  border-radius: 10px;
+  background: rgba(9, 16, 12, 0.88);
+  color: #efffdc;
+  font-size: 11px !important;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
 }
 
 @keyframes afterDeathPulse {
@@ -459,7 +458,7 @@ body {
     right: 7px !important;
     bottom: 7px !important;
     max-height: 34dvh !important;
-    padding: 7px !important;
+    padding: 0 !important;
   }
 
   .game3d-controls > span {
@@ -469,6 +468,11 @@ body {
   .crafting-panel {
     max-height: 19dvh;
     flex-basis: 100% !important;
+    max-width: none;
+  }
+
+  .objective-panel {
+    flex-basis: 100%;
     max-width: none;
   }
 

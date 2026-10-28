@@ -18,7 +18,7 @@ function ZombieModel({ zombie, registerRef, bloodMoon = false }) {
     registerRef(zombie.id, groupRef.current);
     return () => registerRef(zombie.id, null);
   }, [zombie.id, registerRef]);
-
+``
   const skin = boss ? "#28121c" : "#78916a";
   const cloth = boss ? "#641126" : "#526b4c";
   return (
@@ -246,15 +246,16 @@ export default function ZombieSystem({
 
   if (!isNight || disabled) return null;
 
-  return;
-  <>
-    {zombies.map((zombie) => (
-      <ZombieModel
-        key={zombie.id}
-        zombie={zombie}
-        registerRef={registerRef}
-        bloodMoon={bloodMoon}
-      />
-    ))}
-  </>;
+  return (
+    <>
+      {zombies.map((zombie) => (
+        <ZombieModel
+          key={zombie.id}
+          zombie={zombie}
+          registerRef={registerRef}
+          bloodMoon={bloodMoon}
+        />
+      ))}
+    </>
+  );
 }
